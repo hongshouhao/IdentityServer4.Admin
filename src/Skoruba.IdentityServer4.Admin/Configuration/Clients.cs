@@ -4,17 +4,13 @@ using IdentityServer4.Models;
 using Skoruba.IdentityServer4.Admin.Constants;
 
 namespace Skoruba.IdentityServer4.Admin.Configuration
-
 {
     public class Clients
     {
-
         public static IEnumerable<Client> GetAdminClient()
         {
-
             return new List<Client>
             {
-
 	            ///////////////////////////////////////////
 	            // Skoruba.IdentityServer4.Admin Client
 	            //////////////////////////////////////////
