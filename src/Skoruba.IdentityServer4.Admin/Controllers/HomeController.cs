@@ -3,12 +3,12 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Skoruba.IdentityServer4.Admin.Constants;
+using Skoruba.IdentityServer4.Admin.Configuration;
 using Skoruba.IdentityServer4.Admin.ExceptionHandling;
 
 namespace Skoruba.IdentityServer4.Admin.Controllers
 {
-    [Authorize(Policy = AuthorizationConsts.AdministrationPolicy)]
+    [Authorize(Policy = Administration.Policy)]
     [TypeFilter(typeof(ControllerExceptionFilterAttribute))]
     public class HomeController : BaseController
     {
@@ -23,7 +23,7 @@ namespace Skoruba.IdentityServer4.Admin.Controllers
         {
             return View();
         }
-        
+
         public IActionResult Error()
         {
             // Get the details of the exception that occurred

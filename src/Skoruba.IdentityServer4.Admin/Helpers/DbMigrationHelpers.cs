@@ -1,15 +1,14 @@
-﻿using System;
-using System.Linq;
-using System.Threading.Tasks;
-using IdentityServer4.EntityFramework.Mappers;
+﻿using IdentityServer4.EntityFramework.Mappers;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Skoruba.IdentityServer4.Admin.Configuration;
-using Skoruba.IdentityServer4.Admin.Constants;
 using Skoruba.IdentityServer4.Admin.EntityFramework.DbContexts;
 using Skoruba.IdentityServer4.Admin.EntityFramework.Entities.Identity;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Skoruba.IdentityServer4.Admin.Helpers
 {
@@ -52,28 +51,30 @@ namespace Skoruba.IdentityServer4.Admin.Helpers
             RoleManager<UserIdentityRole> roleManager)
         {
             // Create admin role
-            if (!await roleManager.RoleExistsAsync(AuthorizationConsts.AdministrationRole))
+            if (!await roleManager.RoleExistsAsync(Administration.AdministratorRole))
             {
-                var role = new UserIdentityRole { Name = AuthorizationConsts.AdministrationRole };
-
+                var role = new UserIdentityRole { Name = Administration.AdministratorRole };
                 await roleManager.CreateAsync(role);
             }
 
             // Create admin user
-            if (await userManager.FindByNameAsync(Users.AdminUserName) != null) return;
+            if (await userManager.FindByNameAsync(AdminUser.UserName) != null) return;
 
             var user = new UserIdentity
             {
-                UserName = Users.AdminUserName,
-                Email = Users.AdminEmail,
-                EmailConfirmed = true
+                UserName = AdminUser.UserName,
+                Email = AdminUser.Email,
+                EmailConfirmed = true,
             };
 
-            var result = await userManager.CreateAsync(user, Users.AdminPassword);
-
+            var result = await userManager.CreateAsync(user, AdminUser.Password);
             if (result.Succeeded)
             {
-                await userManager.AddToRoleAsync(user, AuthorizationConsts.AdministrationRole);
+                result = await userManager.AddToRoleAsync(user, Administration.AdministratorRole);
+                if (result.Succeeded)
+                {
+                    await userManager.AddClaimsAsync(user, AdminUser.GetClaims());
+                }
             }
         }
 
@@ -84,17 +85,13 @@ namespace Skoruba.IdentityServer4.Admin.Helpers
         {
             if (!context.Clients.Any())
             {
-                foreach (var client in Clients.GetAdminClient().ToList())
-                {
-                    await context.Clients.AddAsync(client.ToEntity());
-                }
-
+                await context.Clients.AddAsync(AdminClient.Get().ToEntity());
                 await context.SaveChangesAsync();
             }
 
             if (!context.IdentityResources.Any())
             {
-                var identityResources = ClientResources.GetIdentityResources().ToList();
+                var identityResources = Resources.GetIdentityResources().ToList();
 
                 foreach (var resource in identityResources)
                 {
@@ -106,7 +103,7 @@ namespace Skoruba.IdentityServer4.Admin.Helpers
 
             if (!context.ApiResources.Any())
             {
-                foreach (var resource in ClientResources.GetApiResources().ToList())
+                foreach (var resource in Resources.GetApiResources().ToList())
                 {
                     await context.ApiResources.AddAsync(resource.ToEntity());
                 }

@@ -1,9 +1,10 @@
-﻿using System.Collections.Generic;
-using Microsoft.AspNetCore.Authentication;
+﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Skoruba.IdentityServer4.Admin.Constants;
+using Skoruba.IdentityServer4.Admin.Configuration;
+using System.Collections.Generic;
 
 namespace Skoruba.IdentityServer4.Admin.Controllers
 {
@@ -12,7 +13,6 @@ namespace Skoruba.IdentityServer4.Admin.Controllers
     {
         public AccountController(ILogger<ConfigurationController> logger) : base(logger)
         {
-
         }
 
         public IActionResult AccessDenied()
@@ -22,7 +22,10 @@ namespace Skoruba.IdentityServer4.Admin.Controllers
 
         public IActionResult Logout()
         {
-            return new SignOutResult(new List<string> { AuthorizationConsts.SignInScheme, AuthorizationConsts.OidcAuthenticationScheme },
+            return new SignOutResult(new List<string> {
+                    CookieAuthenticationDefaults.AuthenticationScheme,
+                    Administration.OidcAuthenticationScheme
+                },
                 new AuthenticationProperties { RedirectUri = "/" });
         }
     }

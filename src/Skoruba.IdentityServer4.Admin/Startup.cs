@@ -1,53 +1,43 @@
-﻿using System.IdentityModel.Tokens.Jwt;
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Skoruba.IdentityServer4.Admin.Configuration;
 using Skoruba.IdentityServer4.Admin.Helpers;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace Skoruba.IdentityServer4.Admin
 {
     public class Startup
     {
-        public Startup(IHostingEnvironment env)
+        public Startup(IConfiguration config, IHostingEnvironment env)
         {
+            Configuration = config;
+            Environment = env;
+
             JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
-
-            var builder = new ConfigurationBuilder()
-                    .SetBasePath(env.ContentRootPath)
-                    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-                    .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: true)
-                    .AddEnvironmentVariables();
-
-            if (env.IsDevelopment())
-            {
-                builder.AddUserSecrets<Startup>();
-            }
-
-            Configuration = builder.Build();
-
-            HostingEnvironment = env;
+            AdminClient.ReadConfig(Configuration);
+            IdentityServer.ReadConfig(Configuration);
         }
 
-        public IConfigurationRoot Configuration { get; }
+        public IConfiguration Configuration { get; }
 
-        public IHostingEnvironment HostingEnvironment { get; }
+        public IHostingEnvironment Environment { get; }
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddDbContexts(HostingEnvironment, Configuration);
-            services.AddAuthentication(HostingEnvironment);
+            services.AddDbContexts(Configuration);
+            services.AddAuth();
             services.AddServices();
             services.AddMvcLocalization();
             services.AddAuthorizationPolicies();
         }
 
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
+        public void Configure(IApplicationBuilder app, ILoggerFactory loggerFactory)
         {
             app.AddLogging(loggerFactory, Configuration);
-
-            if (env.IsDevelopment())
+            if (Environment.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
                 app.UseBrowserLink();
@@ -56,16 +46,16 @@ namespace Skoruba.IdentityServer4.Admin
             {
                 app.UseExceptionHandler("/Home/Error");
             }
-                        
+
             app.UseSecurityHeaders();
             app.UseStaticFiles();
-            app.ConfigureAuthentification(env);
+            app.ConfigureAuthentification(Environment);
             app.ConfigureLocalization();
 
             app.UseMvc(routes =>
             {
                 routes.MapRoute("default", "{controller=Home}/{action=Index}/{id?}");
             });
-        }       
+        }
     }
 }

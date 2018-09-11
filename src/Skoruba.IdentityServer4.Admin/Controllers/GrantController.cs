@@ -4,15 +4,16 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
-using Skoruba.IdentityServer4.Admin.Constants;
 using Skoruba.IdentityServer4.Admin.ExceptionHandling;
 using Skoruba.IdentityServer4.Admin.Helpers;
 using Skoruba.IdentityServer4.Admin.BusinessLogic.Services;
 using Skoruba.IdentityServer4.Admin.BusinessLogic.Dtos.Grant;
+using Skoruba.IdentityServer4.Admin.Configuration;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace Skoruba.IdentityServer4.Admin.Controllers
 {
-    [Authorize(Policy = AuthorizationConsts.AdministrationPolicy)]
+    [Authorize(Policy = Administration.Policy)]
     [TypeFilter(typeof(ControllerExceptionFilterAttribute))]
     public class GrantController : BaseController
     {

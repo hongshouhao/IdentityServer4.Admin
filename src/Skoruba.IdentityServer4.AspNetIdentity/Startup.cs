@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Reflection;
+using IdentityServer4.Quickstart.UI;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
@@ -16,21 +17,10 @@ namespace Skoruba.IdentityServer4.AspNetIdentity
         public IConfiguration Configuration { get; }
         public IHostingEnvironment Environment { get; }
 
-        public Startup(IHostingEnvironment environment)
+        public Startup(IConfiguration config, IHostingEnvironment env)
         {
-            var builder = new ConfigurationBuilder()
-                .SetBasePath(environment.ContentRootPath)
-                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-                .AddJsonFile($"appsettings.{environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
-                .AddEnvironmentVariables();
-
-            if (environment.IsDevelopment())
-            {
-                builder.AddUserSecrets<Startup>();
-            }
-
-            Configuration = builder.Build();
-            Environment = environment;
+            Configuration = config;
+            Environment = env;
         }
 
         public void ConfigureServices(IServiceCollection services)
@@ -60,28 +50,24 @@ namespace Skoruba.IdentityServer4.AspNetIdentity
                 options.Events.RaiseFailureEvents = true;
                 options.Events.RaiseSuccessEvents = true;
             })
-                .AddAspNetIdentity<UserIdentity>()
-                // this adds the config data from DB (clients, resources)
-                .AddConfigurationStore(options =>
-                {
-                    options.ConfigureDbContext = b =>
-                        b.UseSqlServer(connectionString,
-                            sql => sql.MigrationsAssembly(migrationsAssembly));
-                })
-                // this adds the operational data from DB (codes, tokens, consents)
-                .AddOperationalStore(options =>
-                {
-                    options.ConfigureDbContext = b =>
-                        b.UseSqlServer(connectionString,
-                            sql => sql.MigrationsAssembly(migrationsAssembly));
+            .AddAspNetIdentity<UserIdentity>()
+            // this adds the config data from DB (clients, resources)
+            .AddConfigurationStore(options =>
+            {
+                options.ConfigureDbContext = b =>
+                    b.UseSqlServer(connectionString,
+                        sql => sql.MigrationsAssembly(migrationsAssembly));
+            })
+            // this adds the operational data from DB (codes, tokens, consents)
+            .AddOperationalStore(options =>
+            {
+                options.ConfigureDbContext = b =>
+                    b.UseSqlServer(connectionString,
+                        sql => sql.MigrationsAssembly(migrationsAssembly));
 
-                    // this enables automatic token cleanup. this is optional.
-                    options.EnableTokenCleanup = true;
-
-#if DEBUG
-                    options.TokenCleanupInterval = 15; // frequency in seconds to cleanup stale grants. 15 is useful during debugging
-#endif                
-                });
+                // this enables automatic token cleanup. this is optional.
+                options.EnableTokenCleanup = true;
+            });
 
             if (Environment.IsDevelopment())
             {
@@ -101,6 +87,7 @@ namespace Skoruba.IdentityServer4.AspNetIdentity
             }
 
             app.UseStaticFiles();
+            app.UseAuthentication();
             app.UseIdentityServer();
             app.UseMvcWithDefaultRoute();
         }

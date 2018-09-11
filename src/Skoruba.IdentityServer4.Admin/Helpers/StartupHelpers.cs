@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Reflection;
-using System.Threading.Tasks;
-using IdentityModel;
+﻿using IdentityModel;
 using IdentityServer4.EntityFramework.Options;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -26,42 +22,30 @@ using Serilog.Events;
 using Serilog.Sinks.MSSqlServer;
 using Skoruba.IdentityServer4.Admin.BusinessLogic.Repositories;
 using Skoruba.IdentityServer4.Admin.BusinessLogic.Resources;
-using Skoruba.IdentityServer4.Admin.Constants;
+using Skoruba.IdentityServer4.Admin.BusinessLogic.Services;
+using Skoruba.IdentityServer4.Admin.Configuration;
 using Skoruba.IdentityServer4.Admin.EntityFramework.Constants;
 using Skoruba.IdentityServer4.Admin.EntityFramework.DbContexts;
 using Skoruba.IdentityServer4.Admin.EntityFramework.Entities.Identity;
 using Skoruba.IdentityServer4.Admin.ExceptionHandling;
-using Skoruba.IdentityServer4.Admin.Middlewares;
-using Skoruba.IdentityServer4.Admin.BusinessLogic.Services;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Reflection;
+using System.Threading.Tasks;
 
 namespace Skoruba.IdentityServer4.Admin.Helpers
 {
     public static class StartupHelpers
     {
-        public static void RegisterDbContexts(this IServiceCollection services, IConfigurationRoot configuration)
+        public static void RegisterDbContexts(this IServiceCollection services, IConfiguration configuration)
         {
             var migrationsAssembly = typeof(Startup).GetTypeInfo().Assembly.GetName().Name;
 
-            var operationalStoreOptions = new OperationalStoreOptions();
-            services.AddSingleton(operationalStoreOptions);
-
-            var storeOptions = new ConfigurationStoreOptions();
-            services.AddSingleton(storeOptions);
-
-            services.AddDbContext<AdminDbContext>(options => options.UseSqlServer(configuration.GetConnectionString(ConfigurationConsts.AdminConnectionStringKey), optionsSql => optionsSql.MigrationsAssembly(migrationsAssembly)));
-        }
-
-        public static void RegisterDbContextsStaging(this IServiceCollection services)
-        {
-            var databaseName = Guid.NewGuid().ToString();
-
-            var operationalStoreOptions = new OperationalStoreOptions();
-            services.AddSingleton(operationalStoreOptions);
-
-            var storeOptions = new ConfigurationStoreOptions();
-            services.AddSingleton(storeOptions);
-
-            services.AddDbContext<AdminDbContext>(optionsBuilder => optionsBuilder.UseInMemoryDatabase(databaseName));
+            services.AddSingleton(new OperationalStoreOptions());
+            services.AddSingleton(new ConfigurationStoreOptions());
+            services.AddDbContext<AdminDbContext>(
+                options => options.UseSqlServer(configuration.GetConnectionString(ConfigConsts.DbConnectionStringKey),
+                    optionsSql => optionsSql.MigrationsAssembly(migrationsAssembly)));
         }
 
         public static void UseSecurityHeaders(this IApplicationBuilder app)
@@ -109,11 +93,6 @@ namespace Skoruba.IdentityServer4.Admin.Helpers
         public static void ConfigureAuthentification(this IApplicationBuilder app, IHostingEnvironment env)
         {
             app.UseAuthentication();
-
-            if (env.IsStaging())
-            {
-                app.UseMiddleware<AuthenticatedTestRequestMiddleware>();
-            }
         }
 
         public static void ConfigureLocalization(this IApplicationBuilder app)
@@ -122,9 +101,9 @@ namespace Skoruba.IdentityServer4.Admin.Helpers
             app.UseRequestLocalization(options.Value);
         }
 
-        public static void AddLogging(this IApplicationBuilder app, ILoggerFactory loggerFactory, IConfigurationRoot configuration)
+        public static void AddLogging(this IApplicationBuilder app, ILoggerFactory loggerFactory, IConfiguration configuration)
         {
-            loggerFactory.AddConsole(configuration.GetSection(ConfigurationConsts.LoggingSectionKey));
+            loggerFactory.AddConsole(configuration.GetSection(ConfigConsts.LoggingSectionKey));
             loggerFactory.AddDebug();
 
             var columnOptions = new ColumnOptions();
@@ -136,31 +115,29 @@ namespace Skoruba.IdentityServer4.Admin.Helpers
             columnOptions.Store.Add(StandardColumn.LogEvent);
 
             Log.Logger = new LoggerConfiguration()
-                .WriteTo.MSSqlServer(configuration.GetConnectionString(ConfigurationConsts.AdminConnectionStringKey),
+                .WriteTo.MSSqlServer(configuration.GetConnectionString(ConfigConsts.DbConnectionStringKey),
                     TableConsts.Logging,
                     columnOptions: columnOptions,
                     restrictedToMinimumLevel: LogEventLevel.Error)
                 .CreateLogger();
         }
 
-        public static void AddDbContexts(this IServiceCollection services, IHostingEnvironment hostingEnvironment, IConfigurationRoot configuration)
+        public static void AddDbContexts(this IServiceCollection services, IConfiguration configuration)
         {
-            if (hostingEnvironment.IsStaging())
-            {
-                services.RegisterDbContextsStaging();
-            }
-            else
-            {
-                services.RegisterDbContexts(configuration);
-            }
+            services.RegisterDbContexts(configuration);
         }
 
         public static void AddAuthorizationPolicies(this IServiceCollection services)
         {
             services.AddAuthorization(options =>
             {
-                options.AddPolicy(AuthorizationConsts.AdministrationPolicy,
-                    policy => policy.RequireRole(AuthorizationConsts.AdministrationRole));
+                options.AddPolicy(
+                    Administration.Policy,
+                    policy =>
+                    {
+                        //policy.AuthenticationSchemes.Add(JwtBearerDefaults.AuthenticationScheme);
+                        policy.RequireRole(Administration.AdministratorRole);
+                    });
             });
         }
 
@@ -197,109 +174,79 @@ namespace Skoruba.IdentityServer4.Admin.Helpers
         {
             services.AddSingleton<ITempDataProvider, CookieTempDataProvider>();
 
-            services.AddLocalization(opts => { opts.ResourcesPath = ConfigurationConsts.ResourcesPath; });
+            services.AddLocalization(opts => { opts.ResourcesPath = ConfigConsts.ResourcesPath; });
 
             services.AddMvc()
                 .SetCompatibilityVersion(CompatibilityVersion.Version_2_1)
                 .AddViewLocalization(
                     LanguageViewLocationExpanderFormat.Suffix,
-                    opts => { opts.ResourcesPath = ConfigurationConsts.ResourcesPath; })
+                    opts => { opts.ResourcesPath = ConfigConsts.ResourcesPath; })
                 .AddDataAnnotationsLocalization();
 
-            services.Configure<RequestLocalizationOptions>(
-                opts =>
+            services.Configure<RequestLocalizationOptions>(opts =>
+            {
+                var supportedCultures = new[]
                 {
-                    var supportedCultures = new[]
-                    {
-                        new CultureInfo("en-US"),
-                        new CultureInfo("en")
-                    };
+                     new CultureInfo("en-US"),
+                     new CultureInfo("en")
+                };
 
-                    opts.DefaultRequestCulture = new RequestCulture("en");
-                    opts.SupportedCultures = supportedCultures;
-                    opts.SupportedUICultures = supportedCultures;
-                });
+                opts.DefaultRequestCulture = new RequestCulture("en");
+                opts.SupportedCultures = supportedCultures;
+                opts.SupportedUICultures = supportedCultures;
+            });
         }
 
-        public static void AddAuthentication(this IServiceCollection services, IHostingEnvironment hostingEnvironment)
+        public static void AddAuth(this IServiceCollection services)
         {
             services.AddIdentity<UserIdentity, UserIdentityRole>()
                 .AddEntityFrameworkStores<AdminDbContext>()
                 .AddDefaultTokenProviders();
 
-            //For integration tests use only cookie middleware
-            if (hostingEnvironment.IsStaging())
+            services.AddAuthentication(options =>
             {
-                services.AddAuthentication(options =>
-                {
-                    options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                    options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = Administration.OidcAuthenticationScheme;
 
-                    options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                    options.DefaultForbidScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                    options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                    options.DefaultSignOutScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                })
-                    .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme,
-                        options => { options.Cookie.Name = AuthorizationConsts.IdentityAdminCookieName; });
-            }
-            else
+                options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.DefaultForbidScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.DefaultSignOutScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+            })
+            .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
             {
-                services.AddAuthentication(options =>
-                {
-                    options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                    options.DefaultChallengeScheme = AuthorizationConsts.OidcAuthenticationScheme;
+                options.Cookie.Name = AdminClient.Id;
+            })
+            .AddOpenIdConnect(Administration.OidcAuthenticationScheme, options =>
+            {
+                options.Authority = IdentityServer.BaseUrl;
+                options.ClientId = AdminClient.Id;
+                options.RequireHttpsMetadata = false;
+                options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.SaveTokens = true;
 
-                    options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                    options.DefaultForbidScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                    options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                    options.DefaultSignOutScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                })
-                    .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme,
-                        options => { options.Cookie.Name = AuthorizationConsts.IdentityAdminCookieName; })
-                    .AddOpenIdConnect(AuthorizationConsts.OidcAuthenticationScheme, options =>
+                options.Scope.Clear();
+                foreach (var scope in Administration.AllowedScopes)
+                {
+                    options.Scope.Add(scope);
+                }
+
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    NameClaimType = JwtClaimTypes.Name,
+                    RoleClaimType = JwtClaimTypes.Role,
+                };
+
+                options.Events = new OpenIdConnectEvents
+                {
+                    OnRemoteFailure = context =>
                     {
-                        options.Authority = AuthorizationConsts.IdentityServerBaseUrl;
-                        options.RequireHttpsMetadata = false;
-
-                        options.ClientId = AuthorizationConsts.OidcClientId;
-
-                        options.Scope.Clear();
-                        options.Scope.Add(AuthorizationConsts.ScopeOpenId);
-                        options.Scope.Add(AuthorizationConsts.ScopeProfile);
-                        options.Scope.Add(AuthorizationConsts.ScopeEmail);
-                        options.Scope.Add(AuthorizationConsts.ScopeRoles);
-
-                        options.SaveTokens = true;
-
-                        options.TokenValidationParameters = new TokenValidationParameters
-                        {
-                            NameClaimType = JwtClaimTypes.Name,
-                            RoleClaimType = JwtClaimTypes.Role,
-                        };
-
-                        options.Events = new OpenIdConnectEvents
-                        {
-                            OnMessageReceived = OnMessageReceived,
-                            OnRedirectToIdentityProvider = OnRedirectToIdentityProvider
-                        };
-                    });
-            }
-        }
-
-        private static Task OnMessageReceived(MessageReceivedContext context)
-        {
-            context.Properties.IsPersistent = true;
-            context.Properties.ExpiresUtc = new DateTimeOffset(DateTime.Now.AddHours(12));
-
-            return Task.FromResult(0);
-        }
-
-        private static Task OnRedirectToIdentityProvider(RedirectContext n)
-        {
-            n.ProtocolMessage.RedirectUri = AuthorizationConsts.IdentityAdminRedirectUri;
-
-            return Task.FromResult(0);
+                        context.Response.Redirect("/");
+                        context.HandleResponse();
+                        return Task.CompletedTask;
+                    }
+                };
+            });
         }
     }
 }
