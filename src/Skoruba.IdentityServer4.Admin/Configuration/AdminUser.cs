@@ -14,7 +14,7 @@ namespace Skoruba.IdentityServer4.Admin.Configuration
             return new Claim[] {
                 new Claim(JwtClaimTypes.Name, UserName),
                 new Claim(JwtClaimTypes.Role, Administration.AdministratorRole),
-                new Claim(JwtClaimTypes.Subject, UserName)
+                new Claim(JwtClaimTypes.Subject, "1")
             };
         }
     }
