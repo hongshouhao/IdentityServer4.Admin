@@ -1,14 +1,18 @@
-﻿using System;
-using System.Reflection;
-using IdentityServer4.Quickstart.UI;
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Serilog;
+using Serilog.Events;
+using Serilog.Sinks.MSSqlServer;
+using Skoruba.IdentityServer4.Admin.EntityFramework.Constants;
 using Skoruba.IdentityServer4.Admin.EntityFramework.DbContexts;
 using Skoruba.IdentityServer4.Admin.EntityFramework.Entities.Identity;
+using System;
+using System.Reflection;
 
 namespace Skoruba.IdentityServer4.AspNetIdentity
 {
@@ -16,6 +20,7 @@ namespace Skoruba.IdentityServer4.AspNetIdentity
     {
         public IConfiguration Configuration { get; }
         public IHostingEnvironment Environment { get; }
+        string connectionString;
 
         public Startup(IConfiguration config, IHostingEnvironment env)
         {
@@ -25,7 +30,7 @@ namespace Skoruba.IdentityServer4.AspNetIdentity
 
         public void ConfigureServices(IServiceCollection services)
         {
-            string connectionString = Configuration.GetConnectionString("AdminConnection");
+            connectionString = Configuration.GetConnectionString("AdminConnection");
             var migrationsAssembly = typeof(Startup).GetTypeInfo().Assembly.GetName().Name;
 
             services.AddDbContext<AdminDbContext>(options =>
@@ -69,18 +74,13 @@ namespace Skoruba.IdentityServer4.AspNetIdentity
                 options.EnableTokenCleanup = true;
             });
 
-            if (Environment.IsDevelopment())
-            {
-                builder.AddDeveloperSigningCredential();
-            }
-            else
-            {
-                throw new Exception("need to configure key material");
-            }
+            builder.AddDeveloperSigningCredential();
         }
 
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
+            AddLogging(loggerFactory);
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -90,6 +90,21 @@ namespace Skoruba.IdentityServer4.AspNetIdentity
             app.UseAuthentication();
             app.UseIdentityServer();
             app.UseMvcWithDefaultRoute();
+        }
+
+        void AddLogging(ILoggerFactory loggerFactory)
+        {
+            loggerFactory.AddConsole(Configuration.GetSection("Logging"));
+            loggerFactory.AddDebug();
+            var columnOptions = new ColumnOptions();
+            columnOptions.Store.Remove(StandardColumn.Properties);
+            columnOptions.Store.Add(StandardColumn.LogEvent);
+            Log.Logger = new LoggerConfiguration()
+                .WriteTo.MSSqlServer(connectionString,
+                    TableConsts.Logging,
+                    columnOptions: columnOptions,
+                    restrictedToMinimumLevel: LogEventLevel.Error)
+                .CreateLogger();
         }
     }
 }
