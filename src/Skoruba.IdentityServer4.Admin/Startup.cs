@@ -72,7 +72,7 @@ namespace Skoruba.IdentityServer4.Admin
                 app.UseExceptionHandler("/Home/Error");
             }
 
-            app.UseSecurityHeaders();
+            //app.UseSecurityHeaders();
             app.UseStaticFiles();
             app.ConfigureAuthentificationServices(env);
             app.ConfigureLocalization();

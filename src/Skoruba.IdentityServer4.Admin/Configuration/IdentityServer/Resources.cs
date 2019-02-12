@@ -25,6 +25,11 @@ namespace Skoruba.IdentityServer4.Admin.Configuration.IdentityServer
 
         public static IEnumerable<ApiResource> GetApiResources()
         {
+            return new ApiResource[] { };
+        }
+
+        static IEnumerable<ApiResource> GetApiResourcesSample()
+        {
             return new[]
             {
                 // simple version with ctor
