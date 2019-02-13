@@ -1,55 +1,80 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using System.IdentityModel.Tokens.Jwt;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Skoruba.IdentityServer4.Admin.Configuration;
+using Skoruba.IdentityServer4.Admin.BusinessLogic.Extensions;
+using Skoruba.IdentityServer4.Admin.BusinessLogic.Identity.Dtos.Identity;
+using Skoruba.IdentityServer4.Admin.BusinessLogic.Identity.Extensions;
+using Skoruba.IdentityServer4.Admin.Configuration.Interfaces;
+using Skoruba.IdentityServer4.Admin.EntityFramework.DbContexts;
+using Skoruba.IdentityServer4.Admin.EntityFramework.Identity.Entities.Identity;
 using Skoruba.IdentityServer4.Admin.Helpers;
-using System.IdentityModel.Tokens.Jwt;
 
 namespace Skoruba.IdentityServer4.Admin
 {
     public class Startup
     {
-        public Startup(IConfiguration config, IHostingEnvironment env)
+        public Startup(IHostingEnvironment env)
         {
-            Configuration = config;
-            Environment = env;
-
             JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
-            AdminClient.ReadConfig(Configuration);
-            IdentityServer.ReadConfig(Configuration);
+
+            var builder = new ConfigurationBuilder()
+                    .SetBasePath(env.ContentRootPath)
+                    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                    .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: true)
+                    .AddEnvironmentVariables();
+
+            if (env.IsDevelopment())
+            {
+                builder.AddUserSecrets<Startup>();
+            }
+
+            Configuration = builder.Build();
+
+            HostingEnvironment = env;
         }
 
-        public IConfiguration Configuration { get; }
+        public IConfigurationRoot Configuration { get; }
 
-        public IHostingEnvironment Environment { get; }
+        public IHostingEnvironment HostingEnvironment { get; }
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddDbContexts(Configuration);
-            services.AddAuth();
-            services.AddServices();
+            services.ConfigureRootConfiguration(Configuration);
+            var rootConfiguration = services.BuildServiceProvider().GetService<IRootConfiguration>();
+
+            services.AddDbContexts<AdminDbContext>(HostingEnvironment, Configuration);
+            services.AddAuthenticationServices<AdminDbContext, UserIdentity, UserIdentityRole>(HostingEnvironment, rootConfiguration.AdminConfiguration);
+            services.AddMvcExceptionFilters();
+
+            services.AddAdminServices<AdminDbContext>();
+
+            services.AddAdminAspNetIdentityServices<AdminDbContext, UserDto<int>, int, RoleDto<int>, int, int, int,
+                                UserIdentity, UserIdentityRole, int, UserIdentityUserClaim, UserIdentityUserRole,
+                                UserIdentityUserLogin, UserIdentityRoleClaim, UserIdentityUserToken>();
+
             services.AddMvcLocalization();
             services.AddAuthorizationPolicies();
         }
 
-        public void Configure(IApplicationBuilder app, ILoggerFactory loggerFactory)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
             app.AddLogging(loggerFactory, Configuration);
-            if (Environment.IsDevelopment())
+
+            if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
-                app.UseBrowserLink();
             }
             else
             {
                 app.UseExceptionHandler("/Home/Error");
             }
 
-            app.UseSecurityHeaders();
+            //app.UseSecurityHeaders();
             app.UseStaticFiles();
-            app.ConfigureAuthentification(Environment);
+            app.ConfigureAuthentificationServices(env);
             app.ConfigureLocalization();
 
             app.UseMvc(routes =>

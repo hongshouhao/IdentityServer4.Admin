@@ -1,28 +1,29 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 using Skoruba.IdentityServer4.Admin.BusinessLogic.Dtos.Configuration;
 using Skoruba.IdentityServer4.Admin.BusinessLogic.Helpers;
-using Skoruba.IdentityServer4.Admin.BusinessLogic.Services;
-using Skoruba.IdentityServer4.Admin.Configuration;
+using Skoruba.IdentityServer4.Admin.BusinessLogic.Services.Interfaces;
+using Skoruba.IdentityServer4.Admin.Configuration.Constants;
+using Skoruba.IdentityServer4.Admin.EntityFramework.DbContexts;
 using Skoruba.IdentityServer4.Admin.ExceptionHandling;
-using System.Threading.Tasks;
 
 namespace Skoruba.IdentityServer4.Admin.Controllers
 {
-    [Authorize(Policy = Administration.Policy)]
+    [Authorize(Policy = AuthorizationConsts.AdministrationPolicy)]
     [TypeFilter(typeof(ControllerExceptionFilterAttribute))]
     public class ConfigurationController : BaseController
     {
-        private readonly IIdentityResourceService _identityResourceService;
-        private readonly IApiResourceService _apiResourceService;
-        private readonly IClientService _clientService;
+        private readonly IIdentityResourceService<AdminDbContext> _identityResourceService;
+        private readonly IApiResourceService<AdminDbContext> _apiResourceService;
+        private readonly IClientService<AdminDbContext> _clientService;
         private readonly IStringLocalizer<ConfigurationController> _localizer;
 
-        public ConfigurationController(IIdentityResourceService identityResourceService,
-            IApiResourceService apiResourceService,
-            IClientService clientService,
+        public ConfigurationController(IIdentityResourceService<AdminDbContext> identityResourceService,
+            IApiResourceService<AdminDbContext> apiResourceService,
+            IClientService<AdminDbContext> clientService,
             IStringLocalizer<ConfigurationController> localizer,
             ILogger<ConfigurationController> logger)
             : base(logger)
@@ -74,7 +75,7 @@ namespace Skoruba.IdentityServer4.Admin.Controllers
             await _clientService.UpdateClientAsync(client);
             SuccessNotification(string.Format(_localizer["SuccessUpdateClient"], client.ClientId), _localizer["SuccessTitle"]);
 
-            return RedirectToAction(nameof(Clients));
+            return RedirectToAction(nameof(Client), new { client.Id });
         }
 
         [HttpGet]
@@ -144,6 +145,56 @@ namespace Skoruba.IdentityServer4.Admin.Controllers
             return View(properties);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> ApiResourceProperties(int id, int? page)
+        {
+            if (id == 0) return NotFound();
+
+            var properties = await _apiResourceService.GetApiResourcePropertiesAsync(id, page ?? 1);
+
+            return View(properties);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ApiResourceProperties(ApiResourcePropertiesDto apiResourceProperty)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(apiResourceProperty);
+            }
+
+            await _apiResourceService.AddApiResourcePropertyAsync(apiResourceProperty);
+            SuccessNotification(string.Format(_localizer["SuccessAddApiResourceProperty"], apiResourceProperty.Key, apiResourceProperty.ApiResourceName), _localizer["SuccessTitle"]);
+
+            return RedirectToAction(nameof(ApiResourceProperties), new { Id = apiResourceProperty.ApiResourceId });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> IdentityResourceProperties(int id, int? page)
+        {
+            if (id == 0) return NotFound();
+
+            var properties = await _identityResourceService.GetIdentityResourcePropertiesAsync(id, page ?? 1);
+
+            return View(properties);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> IdentityResourceProperties(IdentityResourcePropertiesDto identityResourceProperty)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(identityResourceProperty);
+            }
+
+            await _identityResourceService.AddIdentityResourcePropertyAsync(identityResourceProperty);
+            SuccessNotification(string.Format(_localizer["SuccessAddIdentityResourceProperty"], identityResourceProperty.Value, identityResourceProperty.IdentityResourceName), _localizer["SuccessTitle"]);
+
+            return RedirectToAction(nameof(IdentityResourceProperties), new { Id = identityResourceProperty.IdentityResourceId });
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ClientProperties(ClientPropertiesDto clientProperty)
@@ -194,6 +245,26 @@ namespace Skoruba.IdentityServer4.Admin.Controllers
             return View(nameof(ClientPropertyDelete), clientProperty);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> ApiResourcePropertyDelete(int id)
+        {
+            if (id == 0) return NotFound();
+
+            var apiResourceProperty = await _apiResourceService.GetApiResourcePropertyAsync(id);
+
+            return View(nameof(ApiResourcePropertyDelete), apiResourceProperty);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> IdentityResourcePropertyDelete(int id)
+        {
+            if (id == 0) return NotFound();
+
+            var identityResourceProperty = await _identityResourceService.GetIdentityResourcePropertyAsync(id);
+
+            return View(nameof(IdentityResourcePropertyDelete), identityResourceProperty);
+        }
+
         [HttpPost]
         public async Task<IActionResult> ClientClaimDelete(ClientClaimsDto clientClaim)
         {
@@ -211,6 +282,26 @@ namespace Skoruba.IdentityServer4.Admin.Controllers
             SuccessNotification(_localizer["SuccessDeleteClientProperty"], _localizer["SuccessTitle"]);
 
             return RedirectToAction(nameof(ClientProperties), new { Id = clientProperty.ClientId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ApiResourcePropertyDelete(ApiResourcePropertiesDto apiResourceProperty)
+        {
+            await _apiResourceService.DeleteApiResourcePropertyAsync(apiResourceProperty);
+            SuccessNotification(_localizer["SuccessDeleteApiResourceProperty"], _localizer["SuccessTitle"]);
+
+            return RedirectToAction(nameof(ApiResourceProperties), new { Id = apiResourceProperty.ApiResourceId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> IdentityResourcePropertyDelete(IdentityResourcePropertiesDto identityResourceProperty)
+        {
+            await _identityResourceService.DeleteIdentityResourcePropertyAsync(identityResourceProperty);
+            SuccessNotification(_localizer["SuccessDeleteIdentityResourceProperty"], _localizer["SuccessTitle"]);
+
+            return RedirectToAction(nameof(IdentityResourceProperties), new { Id = identityResourceProperty.IdentityResourceId });
         }
 
         [HttpGet]
@@ -316,12 +407,21 @@ namespace Skoruba.IdentityServer4.Admin.Controllers
 
             identityResource = _identityResourceService.BuildIdentityResourceViewModel(identityResource);
 
-            if (identityResource.Id == 0) await _identityResourceService.AddIdentityResourceAsync(identityResource);
-            else await _identityResourceService.UpdateIdentityResourceAsync(identityResource);
+            int identityResourceId;
+
+            if (identityResource.Id == 0)
+            {
+                identityResourceId = await _identityResourceService.AddIdentityResourceAsync(identityResource);
+            }
+            else
+            {
+                identityResourceId = identityResource.Id;
+                await _identityResourceService.UpdateIdentityResourceAsync(identityResource);
+            }
 
             SuccessNotification(string.Format(_localizer["SuccessAddIdentityResource"], identityResource.Name), _localizer["SuccessTitle"]);
 
-            return RedirectToAction(nameof(IdentityResources));
+            return RedirectToAction(nameof(IdentityResource), new { Id = identityResourceId });
         }
 
         [HttpPost]
@@ -335,12 +435,21 @@ namespace Skoruba.IdentityServer4.Admin.Controllers
 
             ComboBoxHelpers.PopulateValuesToList(apiResource.UserClaimsItems, apiResource.UserClaims);
 
-            if (apiResource.Id == 0) await _apiResourceService.AddApiResourceAsync(apiResource);
-            else await _apiResourceService.UpdateApiResourceAsync(apiResource);
+            int apiResourceId;
+
+            if (apiResource.Id == 0)
+            {
+                apiResourceId = await _apiResourceService.AddApiResourceAsync(apiResource);
+            }
+            else
+            {
+                apiResourceId = apiResource.Id;
+                await _apiResourceService.UpdateApiResourceAsync(apiResource);
+            }
 
             SuccessNotification(string.Format(_localizer["SuccessAddApiResource"], apiResource.Name), _localizer["SuccessTitle"]);
 
-            return RedirectToAction(nameof(ApiResources));
+            return RedirectToAction(nameof(ApiResource), new { Id = apiResourceId });
         }
 
         [HttpGet]
@@ -434,12 +543,21 @@ namespace Skoruba.IdentityServer4.Admin.Controllers
 
             _apiResourceService.BuildApiScopeViewModel(apiScope);
 
-            if (apiScope.ApiScopeId == 0) await _apiResourceService.AddApiScopeAsync(apiScope);
-            else await _apiResourceService.UpdateApiScopeAsync(apiScope);
+            int apiScopeId;
+
+            if (apiScope.ApiScopeId == 0)
+            {
+                apiScopeId = await _apiResourceService.AddApiScopeAsync(apiScope);
+            }
+            else
+            {
+                apiScopeId = apiScope.ApiScopeId;
+                await _apiResourceService.UpdateApiScopeAsync(apiScope);
+            }
 
             SuccessNotification(string.Format(_localizer["SuccessAddApiScope"], apiScope.Name), _localizer["SuccessTitle"]);
 
-            return RedirectToAction(nameof(ApiScopes));
+            return RedirectToAction(nameof(ApiScopes), new { Id = apiScope.ApiResourceId, Scope = apiScopeId });
         }
 
         [HttpGet]

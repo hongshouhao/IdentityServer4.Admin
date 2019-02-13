@@ -1,14 +1,17 @@
-﻿using IdentityServer4.EntityFramework.Mappers;
+﻿using System;
+using System.Linq;
+using System.Threading.Tasks;
+using IdentityServer4.EntityFramework.Mappers;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Skoruba.IdentityServer4.Admin.Configuration;
+using Skoruba.IdentityServer4.Admin.Configuration.Constants;
+using Skoruba.IdentityServer4.Admin.Configuration.Identity;
+using Skoruba.IdentityServer4.Admin.Configuration.IdentityServer;
+using Skoruba.IdentityServer4.Admin.Configuration.Interfaces;
 using Skoruba.IdentityServer4.Admin.EntityFramework.DbContexts;
-using Skoruba.IdentityServer4.Admin.EntityFramework.Entities.Identity;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
+using Skoruba.IdentityServer4.Admin.EntityFramework.Identity.Entities.Identity;
 
 namespace Skoruba.IdentityServer4.Admin.Helpers
 {
@@ -38,8 +41,10 @@ namespace Skoruba.IdentityServer4.Admin.Helpers
                 var userManager = scope.ServiceProvider.GetRequiredService<UserManager<UserIdentity>>();
                 var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<UserIdentityRole>>();
 
+                var rootConfiguration = scope.ServiceProvider.GetRequiredService<IRootConfiguration>();
+
                 context.Database.Migrate();
-                await EnsureSeedIdentityServerData(context);
+                await EnsureSeedIdentityServerData(context, rootConfiguration.AdminConfiguration);
                 await EnsureSeedIdentityData(userManager, roleManager);
             }
         }
@@ -51,47 +56,49 @@ namespace Skoruba.IdentityServer4.Admin.Helpers
             RoleManager<UserIdentityRole> roleManager)
         {
             // Create admin role
-            if (!await roleManager.RoleExistsAsync(Administration.AdministratorRole))
+            if (!await roleManager.RoleExistsAsync(AuthorizationConsts.AdministrationRole))
             {
-                var role = new UserIdentityRole { Name = Administration.AdministratorRole };
+                var role = new UserIdentityRole { Name = AuthorizationConsts.AdministrationRole };
+
                 await roleManager.CreateAsync(role);
             }
 
             // Create admin user
-            if (await userManager.FindByNameAsync(AdminUser.UserName) != null) return;
+            if (await userManager.FindByNameAsync(Users.AdminUserName) != null) return;
 
             var user = new UserIdentity
             {
-                UserName = AdminUser.UserName,
-                Email = AdminUser.Email,
-                EmailConfirmed = true,
+                UserName = Users.AdminUserName,
+                Email = Users.AdminEmail,
+                EmailConfirmed = true
             };
 
-            var result = await userManager.CreateAsync(user, AdminUser.Password);
+            var result = await userManager.CreateAsync(user, Users.AdminPassword);
+
             if (result.Succeeded)
             {
-                result = await userManager.AddToRoleAsync(user, Administration.AdministratorRole);
-                if (result.Succeeded)
-                {
-                    await userManager.AddClaimsAsync(user, AdminUser.GetClaims());
-                }
+                await userManager.AddToRoleAsync(user, AuthorizationConsts.AdministrationRole);
             }
         }
 
         /// <summary>
         /// Generate default clients, identity and api resources
         /// </summary>
-        private static async Task EnsureSeedIdentityServerData(AdminDbContext context)
+        private static async Task EnsureSeedIdentityServerData(AdminDbContext context, IAdminConfiguration adminConfiguration)
         {
             if (!context.Clients.Any())
             {
-                await context.Clients.AddAsync(AdminClient.Get().ToEntity());
+                foreach (var client in Clients.GetAdminClient(adminConfiguration).ToList())
+                {
+                    await context.Clients.AddAsync(client.ToEntity());
+                }
+
                 await context.SaveChangesAsync();
             }
 
             if (!context.IdentityResources.Any())
             {
-                var identityResources = Resources.GetIdentityResources().ToList();
+                var identityResources = ClientResources.GetIdentityResources().ToList();
 
                 foreach (var resource in identityResources)
                 {
@@ -103,7 +110,7 @@ namespace Skoruba.IdentityServer4.Admin.Helpers
 
             if (!context.ApiResources.Any())
             {
-                foreach (var resource in Resources.GetApiResources().ToList())
+                foreach (var resource in ClientResources.GetApiResources().ToList())
                 {
                     await context.ApiResources.AddAsync(resource.ToEntity());
                 }

@@ -4,20 +4,22 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using IdentityServer4.EntityFramework.Entities;
 using Microsoft.EntityFrameworkCore;
-using Skoruba.IdentityServer4.Admin.BusinessLogic.Dtos.Common;
 using Skoruba.IdentityServer4.Admin.BusinessLogic.Dtos.Enums;
 using Skoruba.IdentityServer4.Admin.BusinessLogic.Helpers;
-using Skoruba.IdentityServer4.Admin.EntityFramework.DbContexts;
+using Skoruba.IdentityServer4.Admin.BusinessLogic.Repositories.Interfaces;
+using Skoruba.IdentityServer4.Admin.BusinessLogic.Shared.Dtos.Common;
+using Skoruba.IdentityServer4.Admin.EntityFramework.Interfaces;
 
 namespace Skoruba.IdentityServer4.Admin.BusinessLogic.Repositories
 {
-    public class IdentityResourceRepository : IIdentityResourceRepository
+    public class IdentityResourceRepository<TDbContext> : IIdentityResourceRepository<TDbContext>
+        where TDbContext : DbContext, IAdminConfigurationDbContext
     {
-        private readonly AdminDbContext _dbContext;
+        private readonly TDbContext _dbContext;
 
         public bool AutoSaveChanges { get; set; } = true;
 
-        public IdentityResourceRepository(AdminDbContext dbContext)
+        public IdentityResourceRepository(TDbContext dbContext)
         {
             _dbContext = dbContext;
         }
@@ -28,7 +30,7 @@ namespace Skoruba.IdentityServer4.Admin.BusinessLogic.Repositories
 
             Expression<Func<IdentityResource, bool>> searchCondition = x => x.Name.Contains(search);
 
-            var identityResources = await _dbContext.IdentityResources.WhereIf(!string.IsNullOrEmpty(search), searchCondition).PageBy(x=> x.Name, page, pageSize).ToListAsync();
+            var identityResources = await _dbContext.IdentityResources.WhereIf(!string.IsNullOrEmpty(search), searchCondition).PageBy(x => x.Name, page, pageSize).ToListAsync();
 
             pagedList.Data.AddRange(identityResources);
             pagedList.TotalCount = await _dbContext.IdentityResources.WhereIf(!string.IsNullOrEmpty(search), searchCondition).CountAsync();
@@ -45,11 +47,65 @@ namespace Skoruba.IdentityServer4.Admin.BusinessLogic.Repositories
                 .SingleOrDefaultAsync();
         }
 
+        public async Task<PagedList<IdentityResourceProperty>> GetIdentityResourcePropertiesAsync(int identityResourceId, int page = 1, int pageSize = 10)
+        {
+            var pagedList = new PagedList<IdentityResourceProperty>();
+
+            var properties = await _dbContext.IdentityResourceProperties.Where(x => x.IdentityResource.Id == identityResourceId).PageBy(x => x.Id, page, pageSize)
+                .ToListAsync();
+
+            pagedList.Data.AddRange(properties);
+            pagedList.TotalCount = await _dbContext.IdentityResourceProperties.Where(x => x.IdentityResource.Id == identityResourceId).CountAsync();
+            pagedList.PageSize = pageSize;
+
+            return pagedList;
+        }
+
+        public Task<IdentityResourceProperty> GetIdentityResourcePropertyAsync(int identityResourcePropertyId)
+        {
+            return _dbContext.IdentityResourceProperties
+                .Include(x => x.IdentityResource)
+                .Where(x => x.Id == identityResourcePropertyId)
+                .SingleOrDefaultAsync();
+        }
+
+        public async Task<int> AddIdentityResourcePropertyAsync(int identityResourceId, IdentityResourceProperty identityResourceProperty)
+        {
+            var identityResource = await _dbContext.IdentityResources.Where(x => x.Id == identityResourceId).SingleOrDefaultAsync();
+
+            identityResourceProperty.IdentityResource = identityResource;
+            await _dbContext.IdentityResourceProperties.AddAsync(identityResourceProperty);
+
+            return await AutoSaveChangesAsync();
+        }
+
+        public async Task<int> DeleteIdentityResourcePropertyAsync(IdentityResourceProperty identityResourceProperty)
+        {
+            var propertyToDelete = await _dbContext.IdentityResourceProperties.Where(x => x.Id == identityResourceProperty.Id).SingleOrDefaultAsync();
+
+            _dbContext.IdentityResourceProperties.Remove(propertyToDelete);
+            return await AutoSaveChangesAsync();
+        }
+
+        public async Task<bool> CanInsertIdentityResourcePropertyAsync(IdentityResourceProperty identityResourceProperty)
+        {
+            var existsWithSameName = await _dbContext.IdentityResourceProperties.Where(x => x.Key == identityResourceProperty.Key
+                                                                                       && x.IdentityResource.Id == identityResourceProperty.IdentityResourceId).SingleOrDefaultAsync();
+            return existsWithSameName == null;
+        }
+
+        /// <summary>
+        /// Add new identity resource
+        /// </summary>
+        /// <param name="identityResource"></param>
+        /// <returns>This method return new identity resource id</returns>
         public async Task<int> AddIdentityResourceAsync(IdentityResource identityResource)
         {
             _dbContext.IdentityResources.Add(identityResource);
 
-            return await AutoSaveChangesAsync();
+            await AutoSaveChangesAsync();
+
+            return identityResource.Id;
         }
 
         public async Task<bool> CanInsertIdentityResourceAsync(IdentityResource identityResource)

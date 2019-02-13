@@ -1,25 +1,29 @@
 ﻿using System.Threading.Tasks;
 using IdentityServer4.Models;
-using Skoruba.IdentityServer4.Admin.BusinessLogic.Dtos.Common;
+using Microsoft.EntityFrameworkCore;
 using Skoruba.IdentityServer4.Admin.BusinessLogic.Dtos.Configuration;
-using Skoruba.IdentityServer4.Admin.BusinessLogic.ExceptionHandling;
 using Skoruba.IdentityServer4.Admin.BusinessLogic.Helpers;
 using Skoruba.IdentityServer4.Admin.BusinessLogic.Mappers;
-using Skoruba.IdentityServer4.Admin.BusinessLogic.Repositories;
+using Skoruba.IdentityServer4.Admin.BusinessLogic.Repositories.Interfaces;
 using Skoruba.IdentityServer4.Admin.BusinessLogic.Resources;
+using Skoruba.IdentityServer4.Admin.BusinessLogic.Services.Interfaces;
+using Skoruba.IdentityServer4.Admin.BusinessLogic.Shared.Dtos.Common;
+using Skoruba.IdentityServer4.Admin.BusinessLogic.Shared.ExceptionHandling;
+using Skoruba.IdentityServer4.Admin.EntityFramework.Interfaces;
 
 namespace Skoruba.IdentityServer4.Admin.BusinessLogic.Services
 {
-    public class ApiResourceService : IApiResourceService
+    public class ApiResourceService<TDbContext> : IApiResourceService<TDbContext>
+        where TDbContext : DbContext, IAdminConfigurationDbContext
     {
-        private readonly IApiResourceRepository _apiResourceRepository;
+        private readonly IApiResourceRepository<TDbContext> _apiResourceRepository;
         private readonly IApiResourceServiceResources _apiResourceServiceResources;
-        private readonly IClientService _clientService;
+        private readonly IClientService<TDbContext> _clientService;
         private const string SharedSecret = "SharedSecret";
 
-        public ApiResourceService(IApiResourceRepository apiResourceRepository,
+        public ApiResourceService(IApiResourceRepository<TDbContext> apiResourceRepository,
             IApiResourceServiceResources apiResourceServiceResources,
-            IClientService clientService)
+            IClientService<TDbContext> clientService)
         {
             _apiResourceRepository = apiResourceRepository;
             _apiResourceServiceResources = apiResourceServiceResources;
@@ -32,6 +36,59 @@ namespace Skoruba.IdentityServer4.Admin.BusinessLogic.Services
             var apiResourcesDto = pagedList.ToModel();
 
             return apiResourcesDto;
+        }
+
+        public async Task<ApiResourcePropertiesDto> GetApiResourcePropertiesAsync(int apiResourceId, int page = 1, int pageSize = 10)
+        {
+            var apiResource = await _apiResourceRepository.GetApiResourceAsync(apiResourceId);
+            if (apiResource == null) throw new UserFriendlyErrorPageException(string.Format(_apiResourceServiceResources.ApiResourceDoesNotExist().Description, apiResourceId), _apiResourceServiceResources.ApiResourceDoesNotExist().Description);
+
+            var pagedList = await _apiResourceRepository.GetApiResourcePropertiesAsync(apiResourceId, page, pageSize);
+            var apiResourcePropertiesDto = pagedList.ToModel();
+            apiResourcePropertiesDto.ApiResourceId = apiResourceId;
+            apiResourcePropertiesDto.ApiResourceName = await _apiResourceRepository.GetApiResourceNameAsync(apiResourceId);
+
+            return apiResourcePropertiesDto;
+        }
+
+        public async Task<ApiResourcePropertiesDto> GetApiResourcePropertyAsync(int apiResourcePropertyId)
+        {
+            var apiResourceProperty = await _apiResourceRepository.GetApiResourcePropertyAsync(apiResourcePropertyId);
+            if (apiResourceProperty == null) throw new UserFriendlyErrorPageException(string.Format(_apiResourceServiceResources.ApiResourcePropertyDoesNotExist().Description, apiResourcePropertyId));
+
+            var apiResourcePropertiesDto = apiResourceProperty.ToModel();
+            apiResourcePropertiesDto.ApiResourceId = apiResourceProperty.ApiResourceId;
+            apiResourcePropertiesDto.ApiResourceName = await _apiResourceRepository.GetApiResourceNameAsync(apiResourceProperty.ApiResourceId);
+
+            return apiResourcePropertiesDto;
+        }
+
+        public async Task<int> AddApiResourcePropertyAsync(ApiResourcePropertiesDto apiResourceProperties)
+        {
+            var canInsert = await CanInsertApiResourcePropertyAsync(apiResourceProperties);
+            if (!canInsert)
+            {
+                await BuildApiResourcePropertiesViewModelAsync(apiResourceProperties);
+                throw new UserFriendlyViewException(string.Format(_apiResourceServiceResources.ApiResourcePropertyExistsValue().Description, apiResourceProperties.Key), _apiResourceServiceResources.ApiResourcePropertyExistsKey().Description, apiResourceProperties);
+            }
+
+            var apiResourceProperty = apiResourceProperties.ToEntity();
+
+            return await _apiResourceRepository.AddApiResourcePropertyAsync(apiResourceProperties.ApiResourceId, apiResourceProperty);
+        }
+
+        public async Task<int> DeleteApiResourcePropertyAsync(ApiResourcePropertiesDto apiResourceProperty)
+        {
+            var propertyEntity = apiResourceProperty.ToEntity();
+
+            return await _apiResourceRepository.DeleteApiResourcePropertyAsync(propertyEntity);
+        }
+
+        public async Task<bool> CanInsertApiResourcePropertyAsync(ApiResourcePropertiesDto apiResourceProperty)
+        {
+            var resource = apiResourceProperty.ToEntity();
+
+            return await _apiResourceRepository.CanInsertApiResourcePropertyAsync(resource);
         }
 
         private void HashApiSharedSecret(ApiSecretsDto apiSecret)
@@ -138,7 +195,7 @@ namespace Skoruba.IdentityServer4.Admin.BusinessLogic.Services
             var canInsert = await CanInsertApiScopeAsync(apiScope);
             if (!canInsert)
             {
-                await BuildApiScopesViewModel(apiScope);
+                await BuildApiScopesViewModelAsync(apiScope);
                 throw new UserFriendlyViewException(string.Format(_apiResourceServiceResources.ApiScopeExistsValue().Description, apiScope.Name), _apiResourceServiceResources.ApiScopeExistsKey().Description, apiScope);
             }
 
@@ -154,7 +211,7 @@ namespace Skoruba.IdentityServer4.Admin.BusinessLogic.Services
             return apiScope;
         }
 
-        private async Task BuildApiScopesViewModel(ApiScopesDto apiScope)
+        private async Task BuildApiScopesViewModelAsync(ApiScopesDto apiScope)
         {
             if (apiScope.ApiScopeId == 0)
             {
@@ -164,12 +221,19 @@ namespace Skoruba.IdentityServer4.Admin.BusinessLogic.Services
             }
         }
 
+        private async Task BuildApiResourcePropertiesViewModelAsync(ApiResourcePropertiesDto apiResourceProperties)
+        {
+            var apiResourcePropertiesDto = await GetApiResourcePropertiesAsync(apiResourceProperties.ApiResourceId);
+            apiResourceProperties.ApiResourceProperties.AddRange(apiResourcePropertiesDto.ApiResourceProperties);
+            apiResourceProperties.TotalCount = apiResourcePropertiesDto.TotalCount;
+        }
+
         public async Task<int> UpdateApiScopeAsync(ApiScopesDto apiScope)
         {
             var canInsert = await CanInsertApiScopeAsync(apiScope);
             if (!canInsert)
             {
-                await BuildApiScopesViewModel(apiScope);
+                await BuildApiScopesViewModelAsync(apiScope);
                 throw new UserFriendlyViewException(string.Format(_apiResourceServiceResources.ApiScopeExistsValue().Description, apiScope.Name), _apiResourceServiceResources.ApiScopeExistsKey().Description, apiScope);
             }
 
@@ -204,7 +268,7 @@ namespace Skoruba.IdentityServer4.Admin.BusinessLogic.Services
             HashApiSharedSecret(apiSecret);
 
             var secret = apiSecret.ToEntity();
-            
+
             return await _apiResourceRepository.AddApiSecretAsync(apiSecret.ApiResourceId, secret);
         }
 

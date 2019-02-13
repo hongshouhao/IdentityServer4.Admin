@@ -5,6 +5,7 @@ using FluentAssertions;
 using IdentityServer4.EntityFramework.Options;
 using Microsoft.EntityFrameworkCore;
 using Skoruba.IdentityServer4.Admin.BusinessLogic.Repositories;
+using Skoruba.IdentityServer4.Admin.BusinessLogic.Repositories.Interfaces;
 using Skoruba.IdentityServer4.Admin.EntityFramework.DbContexts;
 using Skoruba.IdentityServer4.Admin.UnitTests.Mocks;
 using Xunit;
@@ -16,6 +17,13 @@ namespace Skoruba.IdentityServer4.Admin.UnitTests.Repositories
         private readonly DbContextOptions<AdminDbContext> _dbContextOptions;
         private readonly ConfigurationStoreOptions _storeOptions;
         private readonly OperationalStoreOptions _operationalStore;
+
+        private IIdentityResourceRepository<AdminDbContext> GetIdentityResourceRepository(AdminDbContext context)
+        {
+            IIdentityResourceRepository<AdminDbContext> identityResourceRepository = new IdentityResourceRepository<AdminDbContext>(context);
+
+            return identityResourceRepository;
+        }
 
         public IdentityResourceRepositoryTests()
         {
@@ -34,7 +42,7 @@ namespace Skoruba.IdentityServer4.Admin.UnitTests.Repositories
         {
             using (var context = new AdminDbContext(_dbContextOptions, _storeOptions, _operationalStore))
             {
-                IIdentityResourceRepository identityResourceRepository = new IdentityResourceRepository(context);
+                var identityResourceRepository = GetIdentityResourceRepository(context);
 
                 //Generate random new identity resource
                 var identityResource = IdentityResourceMock.GenerateRandomIdentityResource(0);
@@ -55,7 +63,7 @@ namespace Skoruba.IdentityServer4.Admin.UnitTests.Repositories
         {
             using (var context = new AdminDbContext(_dbContextOptions, _storeOptions, _operationalStore))
             {
-                IIdentityResourceRepository identityResourceRepository = new IdentityResourceRepository(context);
+                var identityResourceRepository = GetIdentityResourceRepository(context);
 
                 //Generate random new identity resource
                 var identityResource = IdentityResourceMock.GenerateRandomIdentityResource(0);
@@ -76,7 +84,7 @@ namespace Skoruba.IdentityServer4.Admin.UnitTests.Repositories
         {
             using (var context = new AdminDbContext(_dbContextOptions, _storeOptions, _operationalStore))
             {
-                IIdentityResourceRepository identityResourceRepository = new IdentityResourceRepository(context);
+                var identityResourceRepository = GetIdentityResourceRepository(context);
 
                 //Generate random new identity resource
                 var identityResource = IdentityResourceMock.GenerateRandomIdentityResource(0);
@@ -106,7 +114,7 @@ namespace Skoruba.IdentityServer4.Admin.UnitTests.Repositories
         {
             using (var context = new AdminDbContext(_dbContextOptions, _storeOptions, _operationalStore))
             {
-                IIdentityResourceRepository identityResourceRepository = new IdentityResourceRepository(context);
+                var identityResourceRepository = GetIdentityResourceRepository(context);
 
                 //Generate random new identity resource
                 var identityResource = IdentityResourceMock.GenerateRandomIdentityResource(0);
@@ -136,5 +144,117 @@ namespace Skoruba.IdentityServer4.Admin.UnitTests.Repositories
                 updatedIdentityResource.ShouldBeEquivalentTo(updatedIdentityResourceEntity);
             }
         }
-    }
+
+		[Fact]
+		public async Task AddIdentityResourcePropertyAsync()
+		{
+			using (var context = new AdminDbContext(_dbContextOptions, _storeOptions, _operationalStore))
+			{
+				var identityResourceRepository = GetIdentityResourceRepository(context);
+
+				//Generate random new identity resource without id
+				var identityResource = IdentityResourceMock.GenerateRandomIdentityResource(0);
+
+				//Add new identity resource
+				await identityResourceRepository.AddIdentityResourceAsync(identityResource);
+
+				//Get new identity resource
+				var resource = await identityResourceRepository.GetIdentityResourceAsync(identityResource.Id);
+
+				//Assert new identity resource
+				resource.ShouldBeEquivalentTo(identityResource, options => options.Excluding(o => o.Id));
+
+				//Generate random new identity resource property
+				var identityResourceProperty = IdentityResourceMock.GenerateRandomIdentityResourceProperty(0);
+
+				//Add new identity resource property
+				await identityResourceRepository.AddIdentityResourcePropertyAsync(resource.Id, identityResourceProperty);
+
+				//Get new identity resource property
+				var resourceProperty = await context.IdentityResourceProperties.Where(x => x.Id == identityResourceProperty.Id)
+					.SingleOrDefaultAsync();
+
+				resourceProperty.ShouldBeEquivalentTo(identityResourceProperty,
+					options => options.Excluding(o => o.Id).Excluding(x => x.IdentityResource));
+			}
+		}
+
+		[Fact]
+		public async Task DeleteIdentityResourcePropertyAsync()
+		{
+			using (var context = new AdminDbContext(_dbContextOptions, _storeOptions, _operationalStore))
+			{
+				var identityResourceRepository = GetIdentityResourceRepository(context);
+
+				//Generate random new identity resource without id
+				var identityResource = IdentityResourceMock.GenerateRandomIdentityResource(0);
+
+				//Add new identity resource
+				await identityResourceRepository.AddIdentityResourceAsync(identityResource);
+
+				//Get new identity resource
+				var resource = await identityResourceRepository.GetIdentityResourceAsync(identityResource.Id);
+
+				//Assert new identity resource
+				resource.ShouldBeEquivalentTo(identityResource, options => options.Excluding(o => o.Id));
+
+				//Generate random new identity resource property
+				var identityResourceProperty = IdentityResourceMock.GenerateRandomIdentityResourceProperty(0);
+
+				//Add new identity resource property
+				await identityResourceRepository.AddIdentityResourcePropertyAsync(resource.Id, identityResourceProperty);
+
+				//Get new identity resource property
+				var property = await context.IdentityResourceProperties.Where(x => x.Id == identityResourceProperty.Id)
+					.SingleOrDefaultAsync();
+
+				//Assert
+				property.ShouldBeEquivalentTo(identityResourceProperty,
+					options => options.Excluding(o => o.Id).Excluding(x => x.IdentityResource));
+
+				//Try delete it
+				await identityResourceRepository.DeleteIdentityResourcePropertyAsync(property);
+
+				//Get new identity resource property
+				var resourceProperty = await context.IdentityResourceProperties.Where(x => x.Id == identityResourceProperty.Id)
+					.SingleOrDefaultAsync();
+
+				//Assert
+				resourceProperty.Should().BeNull();
+			}
+		}
+
+		[Fact]
+		public async Task GetIdentityResourcePropertyAsync()
+		{
+			using (var context = new AdminDbContext(_dbContextOptions, _storeOptions, _operationalStore))
+			{
+				var identityResourceRepository = GetIdentityResourceRepository(context);
+
+				//Generate random new identity resource without id
+				var identityResource = IdentityResourceMock.GenerateRandomIdentityResource(0);
+
+				//Add new identity resource
+				await identityResourceRepository.AddIdentityResourceAsync(identityResource);
+
+				//Get new identity resource
+				var resource = await identityResourceRepository.GetIdentityResourceAsync(identityResource.Id);
+
+				//Assert new identity resource
+				resource.ShouldBeEquivalentTo(identityResource, options => options.Excluding(o => o.Id));
+
+				//Generate random new identity resource property
+				var identityResourceProperty = IdentityResourceMock.GenerateRandomIdentityResourceProperty(0);
+
+				//Add new identity resource property
+				await identityResourceRepository.AddIdentityResourcePropertyAsync(resource.Id, identityResourceProperty);
+
+				//Get new identity resource property
+				var resourceProperty = await identityResourceRepository.GetIdentityResourcePropertyAsync(identityResourceProperty.Id);
+
+				resourceProperty.ShouldBeEquivalentTo(identityResourceProperty,
+					options => options.Excluding(o => o.Id).Excluding(x => x.IdentityResource));
+			}
+		}
+	}
 }

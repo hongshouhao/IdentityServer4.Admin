@@ -1,18 +1,19 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Skoruba.IdentityServer4.Admin.BusinessLogic.Services;
-using Skoruba.IdentityServer4.Admin.Configuration;
-using System.Threading.Tasks;
+using Skoruba.IdentityServer4.Admin.BusinessLogic.Services.Interfaces;
+using Skoruba.IdentityServer4.Admin.Configuration.Constants;
+using Skoruba.IdentityServer4.Admin.EntityFramework.DbContexts;
 
 namespace Skoruba.IdentityServer4.Admin.Controllers
 {
-    [Authorize(Policy = Administration.Policy)]
+    [Authorize(Policy = AuthorizationConsts.AdministrationPolicy)]
     public class LogController : BaseController
     {
-        private readonly ILogService _logService;
+        private readonly ILogService<AdminDbContext> _logService;
 
-        public LogController(ILogService logService,
+        public LogController(ILogService<AdminDbContext> logService,
             ILogger<ConfigurationController> logger) : base(logger)
         {
             _logService = logService;

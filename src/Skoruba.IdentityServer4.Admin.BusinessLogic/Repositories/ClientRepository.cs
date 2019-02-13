@@ -7,20 +7,22 @@ using IdentityServer4.EntityFramework.Entities;
 using IdentityServer4.Models;
 using Microsoft.EntityFrameworkCore;
 using Skoruba.IdentityServer4.Admin.BusinessLogic.Constants;
-using Skoruba.IdentityServer4.Admin.BusinessLogic.Dtos.Common;
 using Skoruba.IdentityServer4.Admin.BusinessLogic.Dtos.Enums;
 using Skoruba.IdentityServer4.Admin.BusinessLogic.Helpers;
-using Skoruba.IdentityServer4.Admin.EntityFramework.DbContexts;
+using Skoruba.IdentityServer4.Admin.BusinessLogic.Repositories.Interfaces;
+using Skoruba.IdentityServer4.Admin.BusinessLogic.Shared.Dtos.Common;
+using Skoruba.IdentityServer4.Admin.EntityFramework.Interfaces;
 using Client = IdentityServer4.EntityFramework.Entities.Client;
 
 namespace Skoruba.IdentityServer4.Admin.BusinessLogic.Repositories
 {
-    public class ClientRepository : IClientRepository
+    public class ClientRepository<TDbContext> : IClientRepository<TDbContext>
+    where TDbContext : DbContext, IAdminConfigurationDbContext
     {
-        private readonly AdminDbContext _dbContext;
+        private readonly TDbContext _dbContext;
         public bool AutoSaveChanges { get; set; } = true;
 
-        public ClientRepository(AdminDbContext dbContext)
+        public ClientRepository(TDbContext dbContext)
         {
             _dbContext = dbContext;
         }
@@ -61,12 +63,12 @@ namespace Skoruba.IdentityServer4.Admin.BusinessLogic.Repositories
                 .TakeIf(x => x.Id, limit > 0, limit)
                 .Select(x => x.Name).ToListAsync();
 
-            var apiResources = await _dbContext.ApiResources
+            var apiScopes = await _dbContext.ApiScopes
                 .WhereIf(!string.IsNullOrEmpty(scope), x => x.Name.Contains(scope))
                 .TakeIf(x => x.Id, limit > 0, limit)
                 .Select(x => x.Name).ToListAsync();
 
-            var scopes = identityResources.Concat(apiResources).TakeIf(x => x, limit > 0, limit).ToList();
+            var scopes = identityResources.Concat(apiScopes).TakeIf(x => x, limit > 0, limit).ToList();
 
             return scopes;
         }
