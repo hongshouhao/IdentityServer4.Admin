@@ -70,7 +70,7 @@ namespace Skoruba.IdentityServer4.Admin.Helpers
             app.UseHsts(options => options.MaxAge(days: 365));
             app.UseXXssProtection(options => options.EnabledWithBlockMode());
             app.UseXContentTypeOptions();
-            app.UseXfo(options => options.SameOrigin());
+            //app.UseXfo(options => options.SameOrigin());
             app.UseReferrerPolicy(options => options.NoReferrer());
             var allowCspUrls = new List<string>
             {
