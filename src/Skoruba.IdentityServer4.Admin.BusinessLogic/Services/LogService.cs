@@ -1,29 +1,32 @@
-﻿using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
+﻿using System;
+using System.Threading.Tasks;
 using Skoruba.IdentityServer4.Admin.BusinessLogic.Dtos.Log;
 using Skoruba.IdentityServer4.Admin.BusinessLogic.Mappers;
-using Skoruba.IdentityServer4.Admin.BusinessLogic.Repositories.Interfaces;
 using Skoruba.IdentityServer4.Admin.BusinessLogic.Services.Interfaces;
-using Skoruba.IdentityServer4.Admin.EntityFramework.Interfaces;
+using Skoruba.IdentityServer4.Admin.EntityFramework.Repositories.Interfaces;
 
 namespace Skoruba.IdentityServer4.Admin.BusinessLogic.Services
 {
-    public class LogService<TDbContext> : ILogService<TDbContext>
-        where TDbContext : DbContext, IAdminLogDbContext
+    public class LogService : ILogService
     {
-        private readonly ILogRepository<TDbContext> _repository;
+        protected readonly ILogRepository Repository;
 
-        public LogService(ILogRepository<TDbContext> repository)
+        public LogService(ILogRepository repository)
         {
-            _repository = repository;
+            Repository = repository;
         }
 
-        public async Task<LogsDto> GetLogsAsync(string search, int page = 1, int pageSize = 10)
+        public virtual async Task<LogsDto> GetLogsAsync(string search, int page = 1, int pageSize = 10)
         {
-            var pagedList = await _repository.GetLogsAsync(search, page, pageSize);
+            var pagedList = await Repository.GetLogsAsync(search, page, pageSize);
             var logs = pagedList.ToModel();
 
             return logs;
+        }
+
+        public virtual async Task DeleteLogsOlderThanAsync(DateTime deleteOlderThan)
+        {
+            await Repository.DeleteLogsOlderThanAsync(deleteOlderThan);
         }
     }
 }
