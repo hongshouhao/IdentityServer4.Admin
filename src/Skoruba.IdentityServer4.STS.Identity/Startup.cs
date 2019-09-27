@@ -53,6 +53,7 @@ namespace Skoruba.IdentityServer4.STS.Identity
 
             // Add authorization policies for MVC
             services.AddAuthorizationPolicies();
+            services.AddCustomViewLocationExpander(Environment, Logger);
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
