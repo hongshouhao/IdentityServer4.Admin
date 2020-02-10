@@ -2,6 +2,7 @@
 using IdentityServer4.Stores;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Razor;
+using Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
@@ -19,10 +20,15 @@ namespace Skoruba.IdentityServer4.STS.Identity
         public static IServiceCollection AddCustomViewLocationExpander(this IServiceCollection services,
             IHostingEnvironment env, ILogger logger)
         {
+            services.Configure<MvcRazorRuntimeCompilationOptions>(options =>
+            {
+                options.FileProviders.Add(new PhysicalFileProvider(Path.Combine(env.ContentRootPath)));
+            });
+
             services.Configure<RazorViewEngineOptions>(opts =>
             {
                 opts.ViewLocationExpanders.Add(new CustomViewLocationExpander(env, logger));
-                opts.FileProviders.Add(new PhysicalFileProvider(Path.Combine(env.ContentRootPath)));
+                //opts.FileProviders.Add(new PhysicalFileProvider(Path.Combine(env.ContentRootPath)));
             });
             return services;
         }

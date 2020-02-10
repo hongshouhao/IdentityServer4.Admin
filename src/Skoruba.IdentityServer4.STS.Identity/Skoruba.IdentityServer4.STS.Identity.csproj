@@ -1,167 +1,55 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
-  <PropertyGroup>
-    <TargetFramework>netcoreapp2.2</TargetFramework>
-    <UserSecretsId>9c91d295-54c5-4d09-9bd6-fa56fb74011b</UserSecretsId>
-    <StartupObject>Skoruba.IdentityServer4.STS.Identity.Program</StartupObject>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>netcoreapp3.1</TargetFramework>
+        <UserSecretsId>9c91d295-54c5-4d09-9bd6-fa56fb74011b</UserSecretsId>
+        <DockerComposeProjectPath>..\..\docker-compose.dcproj</DockerComposeProjectPath>
+        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+        <DockerfileContext>..\..</DockerfileContext>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <Content Remove="Views\Login\v8.cshtml" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="AspNetCore.HealthChecks.MySql" Version="3.0.0" />
+        <PackageReference Include="AspNetCore.HealthChecks.NpgSql" Version="3.0.0" />
+        <PackageReference Include="AspNetCore.HealthChecks.SqlServer" Version="3.0.0" />
+        <PackageReference Include="AspNetCore.HealthChecks.UI" Version="3.0.3" />
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="3.1.1" />
+        <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="3.0.1" />
+        <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="3.0.0" />
 
-  <ItemGroup>
-    <None Include="wwwroot\login\v8\css\main.css" />
-    <None Include="wwwroot\login\v8\css\util.css" />
-    <None Include="wwwroot\login\v8\fonts\font-awesome-4.7.0\css\font-awesome.css" />
-    <None Include="wwwroot\login\v8\fonts\font-awesome-4.7.0\css\font-awesome.min.css" />
-    <None Include="wwwroot\login\v8\fonts\font-awesome-4.7.0\fonts\fontawesome-webfont.eot" />
-    <None Include="wwwroot\login\v8\fonts\font-awesome-4.7.0\fonts\fontawesome-webfont.svg" />
-    <None Include="wwwroot\login\v8\fonts\font-awesome-4.7.0\fonts\fontawesome-webfont.ttf" />
-    <None Include="wwwroot\login\v8\fonts\font-awesome-4.7.0\fonts\fontawesome-webfont.woff" />
-    <None Include="wwwroot\login\v8\fonts\font-awesome-4.7.0\fonts\fontawesome-webfont.woff2" />
-    <None Include="wwwroot\login\v8\fonts\font-awesome-4.7.0\fonts\FontAwesome.otf" />
-    <None Include="wwwroot\login\v8\fonts\font-awesome-4.7.0\HELP-US-OUT.txt" />
-    <None Include="wwwroot\login\v8\fonts\font-awesome-4.7.0\less\animated.less" />
-    <None Include="wwwroot\login\v8\fonts\font-awesome-4.7.0\less\bordered-pulled.less" />
-    <None Include="wwwroot\login\v8\fonts\font-awesome-4.7.0\less\core.less" />
-    <None Include="wwwroot\login\v8\fonts\font-awesome-4.7.0\less\fixed-width.less" />
-    <None Include="wwwroot\login\v8\fonts\font-awesome-4.7.0\less\font-awesome.less" />
-    <None Include="wwwroot\login\v8\fonts\font-awesome-4.7.0\less\icons.less" />
-    <None Include="wwwroot\login\v8\fonts\font-awesome-4.7.0\less\larger.less" />
-    <None Include="wwwroot\login\v8\fonts\font-awesome-4.7.0\less\list.less" />
-    <None Include="wwwroot\login\v8\fonts\font-awesome-4.7.0\less\mixins.less" />
-    <None Include="wwwroot\login\v8\fonts\font-awesome-4.7.0\less\path.less" />
-    <None Include="wwwroot\login\v8\fonts\font-awesome-4.7.0\less\rotated-flipped.less" />
-    <None Include="wwwroot\login\v8\fonts\font-awesome-4.7.0\less\screen-reader.less" />
-    <None Include="wwwroot\login\v8\fonts\font-awesome-4.7.0\less\stacked.less" />
-    <None Include="wwwroot\login\v8\fonts\font-awesome-4.7.0\less\variables.less" />
-    <None Include="wwwroot\login\v8\fonts\font-awesome-4.7.0\scss\font-awesome.scss" />
-    <None Include="wwwroot\login\v8\fonts\font-awesome-4.7.0\scss\_animated.scss" />
-    <None Include="wwwroot\login\v8\fonts\font-awesome-4.7.0\scss\_bordered-pulled.scss" />
-    <None Include="wwwroot\login\v8\fonts\font-awesome-4.7.0\scss\_core.scss" />
-    <None Include="wwwroot\login\v8\fonts\font-awesome-4.7.0\scss\_fixed-width.scss" />
-    <None Include="wwwroot\login\v8\fonts\font-awesome-4.7.0\scss\_icons.scss" />
-    <None Include="wwwroot\login\v8\fonts\font-awesome-4.7.0\scss\_larger.scss" />
-    <None Include="wwwroot\login\v8\fonts\font-awesome-4.7.0\scss\_list.scss" />
-    <None Include="wwwroot\login\v8\fonts\font-awesome-4.7.0\scss\_mixins.scss" />
-    <None Include="wwwroot\login\v8\fonts\font-awesome-4.7.0\scss\_path.scss" />
-    <None Include="wwwroot\login\v8\fonts\font-awesome-4.7.0\scss\_rotated-flipped.scss" />
-    <None Include="wwwroot\login\v8\fonts\font-awesome-4.7.0\scss\_screen-reader.scss" />
-    <None Include="wwwroot\login\v8\fonts\font-awesome-4.7.0\scss\_stacked.scss" />
-    <None Include="wwwroot\login\v8\fonts\font-awesome-4.7.0\scss\_variables.scss" />
-    <None Include="wwwroot\login\v8\fonts\iconic\css\material-design-iconic-font.css" />
-    <None Include="wwwroot\login\v8\fonts\iconic\css\material-design-iconic-font.min.css" />
-    <None Include="wwwroot\login\v8\fonts\iconic\fonts\Material-Design-Iconic-Font.eot" />
-    <None Include="wwwroot\login\v8\fonts\iconic\fonts\Material-Design-Iconic-Font.svg" />
-    <None Include="wwwroot\login\v8\fonts\iconic\fonts\Material-Design-Iconic-Font.ttf" />
-    <None Include="wwwroot\login\v8\fonts\iconic\fonts\Material-Design-Iconic-Font.woff" />
-    <None Include="wwwroot\login\v8\fonts\iconic\fonts\Material-Design-Iconic-Font.woff2" />
-    <None Include="wwwroot\login\v8\fonts\JosefinSans\JosefinSans-Bold.ttf" />
-    <None Include="wwwroot\login\v8\fonts\JosefinSans\JosefinSans-BoldItalic.ttf" />
-    <None Include="wwwroot\login\v8\fonts\JosefinSans\JosefinSans-Italic.ttf" />
-    <None Include="wwwroot\login\v8\fonts\JosefinSans\JosefinSans-Light.ttf" />
-    <None Include="wwwroot\login\v8\fonts\JosefinSans\JosefinSans-LightItalic.ttf" />
-    <None Include="wwwroot\login\v8\fonts\JosefinSans\JosefinSans-Regular.ttf" />
-    <None Include="wwwroot\login\v8\fonts\JosefinSans\JosefinSans-SemiBold.ttf" />
-    <None Include="wwwroot\login\v8\fonts\JosefinSans\JosefinSans-SemiBoldItalic.ttf" />
-    <None Include="wwwroot\login\v8\fonts\JosefinSans\JosefinSans-Thin.ttf" />
-    <None Include="wwwroot\login\v8\fonts\JosefinSans\JosefinSans-ThinItalic.ttf" />
-    <None Include="wwwroot\login\v8\fonts\JosefinSans\OFL.txt" />
-    <None Include="wwwroot\login\v8\fonts\source-sans-pro\OFL.txt" />
-    <None Include="wwwroot\login\v8\fonts\source-sans-pro\SourceSansPro-Black.ttf" />
-    <None Include="wwwroot\login\v8\fonts\source-sans-pro\SourceSansPro-BlackItalic.ttf" />
-    <None Include="wwwroot\login\v8\fonts\source-sans-pro\SourceSansPro-Bold.ttf" />
-    <None Include="wwwroot\login\v8\fonts\source-sans-pro\SourceSansPro-BoldItalic.ttf" />
-    <None Include="wwwroot\login\v8\fonts\source-sans-pro\SourceSansPro-ExtraLight.ttf" />
-    <None Include="wwwroot\login\v8\fonts\source-sans-pro\SourceSansPro-ExtraLightItalic.ttf" />
-    <None Include="wwwroot\login\v8\fonts\source-sans-pro\SourceSansPro-Italic.ttf" />
-    <None Include="wwwroot\login\v8\fonts\source-sans-pro\SourceSansPro-Light.ttf" />
-    <None Include="wwwroot\login\v8\fonts\source-sans-pro\SourceSansPro-LightItalic.ttf" />
-    <None Include="wwwroot\login\v8\fonts\source-sans-pro\SourceSansPro-Regular.ttf" />
-    <None Include="wwwroot\login\v8\fonts\source-sans-pro\SourceSansPro-SemiBold.ttf" />
-    <None Include="wwwroot\login\v8\fonts\source-sans-pro\SourceSansPro-SemiBoldItalic.ttf" />
-    <None Include="wwwroot\login\v8\fonts\ubuntu\Ubuntu-Bold.ttf" />
-    <None Include="wwwroot\login\v8\fonts\ubuntu\Ubuntu-BoldItalic.ttf" />
-    <None Include="wwwroot\login\v8\fonts\ubuntu\Ubuntu-Italic.ttf" />
-    <None Include="wwwroot\login\v8\fonts\ubuntu\Ubuntu-Light.ttf" />
-    <None Include="wwwroot\login\v8\fonts\ubuntu\Ubuntu-LightItalic.ttf" />
-    <None Include="wwwroot\login\v8\fonts\ubuntu\Ubuntu-Medium.ttf" />
-    <None Include="wwwroot\login\v8\fonts\ubuntu\Ubuntu-MediumItalic.ttf" />
-    <None Include="wwwroot\login\v8\fonts\ubuntu\Ubuntu-Regular.ttf" />
-    <None Include="wwwroot\login\v8\fonts\ubuntu\UFL.txt" />
-    <None Include="wwwroot\login\v8\images\icons\favicon.ico" />
-    <None Include="wwwroot\login\v8\images\icons\map-marker.png" />
-    <None Include="wwwroot\login\v8\index.html" />
-    <None Include="wwwroot\login\v8\js\main.js" />
-    <None Include="wwwroot\login\v8\vendor\animate\animate.css" />
-    <None Include="wwwroot\login\v8\vendor\animsition\css\animsition.css" />
-    <None Include="wwwroot\login\v8\vendor\animsition\css\animsition.min.css" />
-    <None Include="wwwroot\login\v8\vendor\animsition\js\animsition.js" />
-    <None Include="wwwroot\login\v8\vendor\animsition\js\animsition.min.js" />
-    <None Include="wwwroot\login\v8\vendor\bootstrap\css\bootstrap-grid.css" />
-    <None Include="wwwroot\login\v8\vendor\bootstrap\css\bootstrap-grid.css.map" />
-    <None Include="wwwroot\login\v8\vendor\bootstrap\css\bootstrap-grid.min.css" />
-    <None Include="wwwroot\login\v8\vendor\bootstrap\css\bootstrap-grid.min.css.map" />
-    <None Include="wwwroot\login\v8\vendor\bootstrap\css\bootstrap-reboot.css" />
-    <None Include="wwwroot\login\v8\vendor\bootstrap\css\bootstrap-reboot.css.map" />
-    <None Include="wwwroot\login\v8\vendor\bootstrap\css\bootstrap-reboot.min.css" />
-    <None Include="wwwroot\login\v8\vendor\bootstrap\css\bootstrap-reboot.min.css.map" />
-    <None Include="wwwroot\login\v8\vendor\bootstrap\css\bootstrap.css" />
-    <None Include="wwwroot\login\v8\vendor\bootstrap\css\bootstrap.css.map" />
-    <None Include="wwwroot\login\v8\vendor\bootstrap\css\bootstrap.min.css" />
-    <None Include="wwwroot\login\v8\vendor\bootstrap\css\bootstrap.min.css.map" />
-    <None Include="wwwroot\login\v8\vendor\bootstrap\js\bootstrap.js" />
-    <None Include="wwwroot\login\v8\vendor\bootstrap\js\bootstrap.min.js" />
-    <None Include="wwwroot\login\v8\vendor\bootstrap\js\popper.js" />
-    <None Include="wwwroot\login\v8\vendor\bootstrap\js\popper.min.js" />
-    <None Include="wwwroot\login\v8\vendor\bootstrap\js\tooltip.js" />
-    <None Include="wwwroot\login\v8\vendor\countdowntime\countdowntime.js" />
-    <None Include="wwwroot\login\v8\vendor\css-hamburgers\hamburgers.css" />
-    <None Include="wwwroot\login\v8\vendor\css-hamburgers\hamburgers.min.css" />
-    <None Include="wwwroot\login\v8\vendor\daterangepicker\daterangepicker.css" />
-    <None Include="wwwroot\login\v8\vendor\daterangepicker\daterangepicker.js" />
-    <None Include="wwwroot\login\v8\vendor\daterangepicker\moment.js" />
-    <None Include="wwwroot\login\v8\vendor\daterangepicker\moment.min.js" />
-    <None Include="wwwroot\login\v8\vendor\jquery\jquery-3.2.1.min.js" />
-    <None Include="wwwroot\login\v8\vendor\perfect-scrollbar\perfect-scrollbar.css" />
-    <None Include="wwwroot\login\v8\vendor\perfect-scrollbar\perfect-scrollbar.min.js" />
-    <None Include="wwwroot\login\v8\vendor\select2\select2.css" />
-    <None Include="wwwroot\login\v8\vendor\select2\select2.js" />
-    <None Include="wwwroot\login\v8\vendor\select2\select2.min.css" />
-    <None Include="wwwroot\login\v8\vendor\select2\select2.min.js" />
-  </ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="3.1.0" />
+        <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="3.1.0" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="3.1.0" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="3.1.0" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="3.1.0">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.9.5" />
+        <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="3.1.0" />
+        <PackageReference Include="AspNet.Security.OAuth.GitHub" Version="3.0.0" />
+        <PackageReference Include="IdentityServer4.AspNetIdentity" Version="3.1.0" />
+        <PackageReference Include="IdentityServer4.EntityFramework" Version="3.1.0" />
+        <PackageReference Include="NWebsec.AspNetCore.Middleware" Version="2.0.0" />
+        <PackageReference Include="Sendgrid" Version="9.12.0" />
+        <PackageReference Include="Serilog" Version="2.9.0" />
+        <PackageReference Include="Serilog.Enrichers.Thread" Version="3.1.0" />
+        <PackageReference Include="Serilog.Extensions.Hosting" Version="3.0.0" />
+        <PackageReference Include="Serilog.Enrichers.Environment" Version="2.1.3" />
+        <PackageReference Include="Serilog.Settings.Configuration" Version="3.1.0" />
+        <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
+        <PackageReference Include="Serilog.Sinks.RollingFile" Version="3.3.0" />
+        <PackageReference Include="Serilog.Sinks.MSSqlServer" Version="5.1.3" />
+        <PackageReference Include="Skoruba.AuditLogging.EntityFramework" Version="1.0.0-beta7" />
+    </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="AspNet.Security.OAuth.GitHub" Version="2.0.1" />
-    <PackageReference Include="Microsoft.AspNetCore.App" />
-    <PackageReference Include="Microsoft.AspNetCore.Razor.Design" Version="2.2.0" PrivateAssets="All" />
-    <PackageReference Include="IdentityServer4.AspNetIdentity" Version="2.4.0" />
-    <PackageReference Include="IdentityServer4.EntityFramework" Version="2.4.0" />
-    <PackageReference Include="NWebsec.AspNetCore.Middleware" Version="2.0.0" />
-    <PackageReference Include="Sendgrid" Version="9.10.0" />
-    <PackageReference Include="Serilog.AspNetCore" Version="2.1.1" />
-    <PackageReference Include="Serilog.Settings.Configuration" Version="3.0.1" />
-    <PackageReference Include="Serilog.Sinks.File" Version="4.0.0" />
-    <PackageReference Include="Serilog.Sinks.MSSqlServer" Version="5.1.3-dev-00236" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Skoruba.IdentityServer4.Admin.EntityFramework.Identity\Skoruba.IdentityServer4.Admin.EntityFramework.Identity.csproj" />
-    <ProjectReference Include="..\Skoruba.IdentityServer4.Admin.EntityFramework.Shared\Skoruba.IdentityServer4.Admin.EntityFramework.Shared.csproj" />
-    <ProjectReference Include="..\Skoruba.IdentityServer4.Admin.EntityFramework\Skoruba.IdentityServer4.Admin.EntityFramework.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="Views\Login\v8.cshtml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Update="appsettings.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\Skoruba.IdentityServer4.Admin.EntityFramework.Identity\Skoruba.IdentityServer4.Admin.EntityFramework.Identity.csproj" />
+        <ProjectReference Include="..\Skoruba.IdentityServer4.Admin.EntityFramework.MySql\Skoruba.IdentityServer4.Admin.EntityFramework.MySql.csproj" />
+        <ProjectReference Include="..\Skoruba.IdentityServer4.Admin.EntityFramework.PostgreSQL\Skoruba.IdentityServer4.Admin.EntityFramework.PostgreSQL.csproj" />
+        <ProjectReference Include="..\Skoruba.IdentityServer4.Admin.EntityFramework.Shared\Skoruba.IdentityServer4.Admin.EntityFramework.Shared.csproj" />
+        <ProjectReference Include="..\Skoruba.IdentityServer4.Admin.EntityFramework.SqlServer\Skoruba.IdentityServer4.Admin.EntityFramework.SqlServer.csproj" />
+        <ProjectReference Include="..\Skoruba.IdentityServer4.Admin.EntityFramework\Skoruba.IdentityServer4.Admin.EntityFramework.csproj" />
+    </ItemGroup>
 
 </Project>
