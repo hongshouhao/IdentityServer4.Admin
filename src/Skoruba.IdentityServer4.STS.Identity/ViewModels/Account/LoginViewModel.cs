@@ -15,6 +15,7 @@ namespace Skoruba.IdentityServer4.STS.Identity.ViewModels.Account
     {
         public bool AllowRememberLogin { get; set; } = true;
         public bool EnableLocalLogin { get; set; } = true;
+        public string CustomLoginPage { get; set; }
         public LoginResolutionPolicy LoginResolutionPolicy { get; set; } = LoginResolutionPolicy.Username;
 
         public IEnumerable<ExternalProvider> ExternalProviders { get; set; } = Enumerable.Empty<ExternalProvider>();

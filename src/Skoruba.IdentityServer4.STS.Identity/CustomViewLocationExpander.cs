@@ -5,20 +5,16 @@ using Microsoft.AspNetCore.Mvc.Razor;
 using Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Primitives;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace Skoruba.IdentityServer4.STS.Identity
 {
     public static class CustomViewLocationExpanderExtension
     {
-        public static IServiceCollection AddCustomViewLocationExpander(this IServiceCollection services,
-            IHostingEnvironment env, ILogger logger)
+        public static IServiceCollection AddCustomViewLocationExpander(this IServiceCollection services, IWebHostEnvironment env)
         {
             services.Configure<MvcRazorRuntimeCompilationOptions>(options =>
             {
@@ -27,7 +23,7 @@ namespace Skoruba.IdentityServer4.STS.Identity
 
             services.Configure<RazorViewEngineOptions>(opts =>
             {
-                opts.ViewLocationExpanders.Add(new CustomViewLocationExpander(env, logger));
+                opts.ViewLocationExpanders.Add(new CustomViewLocationExpander(env));
                 //opts.FileProviders.Add(new PhysicalFileProvider(Path.Combine(env.ContentRootPath)));
             });
             return services;
@@ -36,12 +32,12 @@ namespace Skoruba.IdentityServer4.STS.Identity
 
     public class CustomViewLocationExpander : IViewLocationExpander
     {
-        readonly IHostingEnvironment _env;
-        readonly ILogger _logger;
-        public CustomViewLocationExpander(IHostingEnvironment env, ILogger logger)
+        //readonly ILogger _logger;
+        readonly IWebHostEnvironment _env;
+        public CustomViewLocationExpander(IWebHostEnvironment env)
         {
             _env = env;
-            _logger = logger;
+            //_logger = logger;
         }
 
         public IEnumerable<string> ExpandViewLocations(ViewLocationExpanderContext context, IEnumerable<string> viewLocations)
@@ -53,7 +49,8 @@ namespace Skoruba.IdentityServer4.STS.Identity
                 {
                     string returnUrl = context.ActionContext.HttpContext.Request.Query
                         .FirstOrDefault(s => s.Key.ToLower() == "returnurl").Value;
-                    _logger.LogDebug($"Find custom login page:\r\n[returnUrl]:{returnUrl}");
+
+                    //_logger.LogDebug($"Find custom login page:\r\n[returnUrl]:{returnUrl}");
 
                     if (!string.IsNullOrWhiteSpace(returnUrl))
                     {
@@ -62,18 +59,18 @@ namespace Skoruba.IdentityServer4.STS.Identity
                         IClientStore clientStore = context.ActionContext.HttpContext.RequestServices.GetRequiredService<IClientStore>();
                         var authContext = interaction.GetAuthorizationContextAsync(returnUrl).Result;
 
-                        _logger.LogDebug($"Find custom login page:\r\n[ClientId]:{authContext?.ClientId}");
+                        //_logger.LogDebug($"Find custom login page:\r\n[ClientId]:{authContext?.ClientId}");
                         if (authContext?.ClientId != null)
                         {
                             var client = clientStore.FindEnabledClientByIdAsync(authContext.ClientId).Result;
                             if (client != null)
                             {
                                 string loginPage = client.Properties.FirstOrDefault(s => s.Key.ToLower() == "login").Value;
-                                _logger.LogDebug($"Find custom login page:\r\n[loginPage]:{loginPage}");
+                                //_logger.LogDebug($"Find custom login page:\r\n[loginPage]:{loginPage}");
                                 if (!string.IsNullOrWhiteSpace(loginPage))
                                 {
                                     string view = Path.Combine(_env.ContentRootPath, $"Views\\login\\{loginPage}.cshtml");
-                                    _logger.LogDebug($"Find custom login page:\r\n[view]:{view}");
+                                    //_logger.LogDebug($"Find custom login page:\r\n[view]:{view}");
                                     if (File.Exists(view))
                                     {
                                         return viewLocations.Select(s =>
@@ -82,7 +79,7 @@ namespace Skoruba.IdentityServer4.STS.Identity
                                     }
                                     else
                                     {
-                                        _logger.LogDebug($"Find custom login page:\r\ncan not found view:{view}");
+                                        //_logger.LogDebug($"Find custom login page:\r\ncan not found view:{view}");
                                         return viewLocations;
                                     }
                                 }
@@ -97,7 +94,7 @@ namespace Skoruba.IdentityServer4.STS.Identity
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex.Message);
+                //_logger.LogError(ex.Message);
             }
             return viewLocations;
         }

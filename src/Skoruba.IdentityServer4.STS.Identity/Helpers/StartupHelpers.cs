@@ -142,7 +142,7 @@ namespace Skoruba.IdentityServer4.STS.Identity.Helpers
             where TConfigurationDbContext : DbContext, IAdminConfigurationDbContext
         {
             var databaseProvider = configuration.GetSection(nameof(DatabaseProviderConfiguration)).Get<DatabaseProviderConfiguration>();
-            
+
             var identityConnectionString = configuration.GetConnectionString(ConfigurationConsts.IdentityDbConnectionStringKey);
             var configurationConnectionString = configuration.GetConnectionString(ConfigurationConsts.ConfigurationDbConnectionStringKey);
             var persistedGrantsConnectionString = configuration.GetConnectionString(ConfigurationConsts.PersistedGrantDbConnectionStringKey);
@@ -351,9 +351,9 @@ namespace Skoruba.IdentityServer4.STS.Identity.Helpers
             where TIdentityDbContext : DbContext
         {
             var configurationDbConnectionString = configuration.GetConnectionString(ConfigurationConsts.ConfigurationDbConnectionStringKey);
-            var persistedGrantsDbConnectionString = configuration.GetConnectionString(ConfigurationConsts.PersistedGrantDbConnectionStringKey);            
+            var persistedGrantsDbConnectionString = configuration.GetConnectionString(ConfigurationConsts.PersistedGrantDbConnectionStringKey);
             var identityDbConnectionString = configuration.GetConnectionString(ConfigurationConsts.IdentityDbConnectionStringKey);
-            
+
             var healthChecksBuilder = services.AddHealthChecks()
                 .AddDbContextCheck<TConfigurationDbContext>("ConfigurationDbContext")
                 .AddDbContextCheck<TPersistedGrantDbContext>("PersistedGrantsDbContext")

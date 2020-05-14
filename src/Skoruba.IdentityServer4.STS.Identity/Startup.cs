@@ -38,7 +38,7 @@ namespace Skoruba.IdentityServer4.STS.Identity
 
             // Add services for authentication, including Identity model and external providers
             RegisterAuthentication(services);
-            
+
             // Add all dependencies for Asp.Net Core Identity in MVC - these dependencies are injected into generic Controllers
             // Including settings for MVC and Localization
             // If you want to change primary keys or use another db model for Asp.Net Core Identity:
@@ -48,6 +48,10 @@ namespace Skoruba.IdentityServer4.STS.Identity
             RegisterAuthorization(services);
 
             services.AddIdSHealthChecks<IdentityServerConfigurationDbContext, IdentityServerPersistedGrantDbContext, AdminIdentityDbContext>(Configuration);
+
+
+            services.AddRazorPages()
+                    .AddRazorRuntimeCompilation();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -66,8 +70,8 @@ namespace Skoruba.IdentityServer4.STS.Identity
 
             app.UseRouting();
             app.UseAuthorization();
-            app.UseEndpoints(endpoint => 
-            { 
+            app.UseEndpoints(endpoint =>
+            {
                 endpoint.MapDefaultControllerRoute();
                 endpoint.MapHealthChecks("/health", new HealthCheckOptions
                 {

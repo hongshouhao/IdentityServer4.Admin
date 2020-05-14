@@ -50,9 +50,13 @@ namespace Skoruba.IdentityServer4.Admin.EntityFramework.Repositories
             var pagedList = new PagedList<Client>();
 
             Expression<Func<Client, bool>> searchCondition = x => x.ClientId.Contains(search) || x.ClientName.Contains(search);
-            var clients = await DbContext.Clients.WhereIf(!string.IsNullOrEmpty(search), searchCondition).PageBy(x => x.Id, page, pageSize).ToListAsync();
+            var clients = await DbContext.Clients.WhereIf(!string.IsNullOrEmpty(search), searchCondition)
+                  .AsNoTracking()
+                  .PageBy(x => x.Id, page, pageSize).ToListAsync();
             pagedList.Data.AddRange(clients);
-            pagedList.TotalCount = await DbContext.Clients.WhereIf(!string.IsNullOrEmpty(search), searchCondition).CountAsync();
+            pagedList.TotalCount = await DbContext.Clients.WhereIf(!string.IsNullOrEmpty(search), searchCondition)
+                .AsNoTracking()
+                .CountAsync();
             pagedList.PageSize = pageSize;
 
             return pagedList;

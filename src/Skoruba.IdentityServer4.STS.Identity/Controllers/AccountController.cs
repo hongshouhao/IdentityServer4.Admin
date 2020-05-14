@@ -21,6 +21,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Skoruba.IdentityServer4.STS.Identity.Configuration;
 using Skoruba.IdentityServer4.STS.Identity.Helpers;
 using Skoruba.IdentityServer4.STS.Identity.Helpers.Localization;
@@ -88,7 +89,26 @@ namespace Skoruba.IdentityServer4.STS.Identity.Controllers
                 return ExternalLogin(vm.ExternalProviders.First().AuthenticationScheme, returnUrl);
             }
 
-            return View(vm);
+
+            //hongsh: 支持自定义登录页
+            if (!string.IsNullOrWhiteSpace(vm.CustomLoginPage))
+            {
+                string loginPage = $"/Views/Login/{vm.CustomLoginPage.ToLower().Replace(".cshtml", "")}.cshtml";
+                var viewEngine = HttpContext.RequestServices.GetService(typeof(ICompositeViewEngine)) as ICompositeViewEngine;
+                var result = viewEngine.GetView(null, loginPage, false);
+                if (result.Success)
+                {
+                    return View(loginPage, vm);
+                }
+                else
+                {
+                    return View(vm);
+                }
+            }
+            else
+            {
+                return View(vm);
+            }
         }
 
         /// <summary>
@@ -609,7 +629,7 @@ namespace Skoruba.IdentityServer4.STS.Identity.Controllers
 
             return await Register(registerModel, returnUrl);
         }
-        
+
 
         /*****************************************/
         /* helper APIs for the AccountController */
@@ -661,6 +681,7 @@ namespace Skoruba.IdentityServer4.STS.Identity.Controllers
                 }).ToList();
 
             var allowLocal = true;
+            string customLoginPage = null;
             if (context?.ClientId != null)
             {
                 var client = await _clientStore.FindEnabledClientByIdAsync(context.ClientId);
@@ -672,6 +693,12 @@ namespace Skoruba.IdentityServer4.STS.Identity.Controllers
                     {
                         providers = providers.Where(provider => client.IdentityProviderRestrictions.Contains(provider.AuthenticationScheme)).ToList();
                     }
+
+
+
+                    //hongsh: 支持自定义登录页
+                    customLoginPage = client.Properties.FirstOrDefault(s => s.Key.ToLower() == "login").Value;
+                    //_logger.LogDebug($"Find custom login page:\r\n[loginPage]:{loginPage}");
                 }
             }
 
@@ -682,7 +709,8 @@ namespace Skoruba.IdentityServer4.STS.Identity.Controllers
                 ReturnUrl = returnUrl,
                 Username = context?.LoginHint,
                 LoginResolutionPolicy = _loginConfiguration.ResolutionPolicy,
-                ExternalProviders = providers.ToArray()
+                ExternalProviders = providers.ToArray(),
+                CustomLoginPage = customLoginPage
             };
         }
 

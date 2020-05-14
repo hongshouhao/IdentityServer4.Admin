@@ -30,7 +30,12 @@ namespace Skoruba.IdentityServer4.Admin.EntityFramework.Repositories
             var pagedList = new PagedList<ApiResource>();
             Expression<Func<ApiResource, bool>> searchCondition = x => x.Name.Contains(search);
 
-            var apiResources = await DbContext.ApiResources.WhereIf(!string.IsNullOrEmpty(search), searchCondition).PageBy(x => x.Name, page, pageSize).ToListAsync();
+            var apiResources = await DbContext.ApiResources.WhereIf(!string.IsNullOrEmpty(search), searchCondition)
+                .Include(x => x.UserClaims)
+                .Include(x => x.Properties)
+                .Include(x => x.Scopes)
+                .AsNoTracking()
+                .PageBy(x => x.Name, page, pageSize).ToListAsync();
 
             pagedList.Data.AddRange(apiResources);
             pagedList.TotalCount = await DbContext.ApiResources.WhereIf(!string.IsNullOrEmpty(search), searchCondition).CountAsync();
@@ -170,6 +175,7 @@ namespace Skoruba.IdentityServer4.Admin.EntityFramework.Repositories
 
             var apiScopes = await DbContext.ApiScopes
                 .Include(x => x.ApiResource)
+                .Include(x => x.UserClaims)
                 .Where(x => x.ApiResource.Id == apiResourceId).PageBy(x => x.Name, page, pageSize).ToListAsync();
 
             pagedList.Data.AddRange(apiScopes);
