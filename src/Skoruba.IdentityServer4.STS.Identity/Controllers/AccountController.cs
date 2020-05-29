@@ -89,7 +89,11 @@ namespace Skoruba.IdentityServer4.STS.Identity.Controllers
                 return ExternalLogin(vm.ExternalProviders.First().AuthenticationScheme, returnUrl);
             }
 
+            return CustomLoginPage(vm);
+        }
 
+        private IActionResult CustomLoginPage(LoginViewModel vm)
+        {
             //hongsh: 支持自定义登录页
             if (!string.IsNullOrWhiteSpace(vm.CustomLoginPage))
             {
@@ -196,12 +200,14 @@ namespace Skoruba.IdentityServer4.STS.Identity.Controllers
                     }
                 }
                 await _events.RaiseAsync(new UserLoginFailureEvent(model.Username, "invalid credentials"));
-                ModelState.AddModelError(string.Empty, AccountOptions.InvalidCredentialsErrorMessage);
+                //hongsh
+                ModelState.AddModelError("loginError", _localizer["InvalidUsernameOrPassword"]);
             }
 
             // something went wrong, show form with error
             var vm = await BuildLoginViewModelAsync(model);
-            return View(vm);
+
+            return CustomLoginPage(vm);
         }
 
 
@@ -255,7 +261,15 @@ namespace Skoruba.IdentityServer4.STS.Identity.Controllers
                 return SignOut(new AuthenticationProperties { RedirectUri = url }, vm.ExternalAuthenticationScheme);
             }
 
-            return View("LoggedOut", vm);
+            //hongsh
+            if (!string.IsNullOrWhiteSpace(vm.PostLogoutRedirectUri))
+            {
+                return Redirect(vm.PostLogoutRedirectUri);
+            }
+            else
+            {
+                return View("LoggedOut", vm);
+            }
         }
 
         [HttpGet]

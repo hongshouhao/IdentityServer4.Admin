@@ -135,6 +135,9 @@
   <data name="InvalidRecoveryCode" xml:space="preserve">
     <value>输入的恢复码无效。</value>
   </data>
+  <data name="InvalidUsernameOrPassword" xml:space="preserve">
+    <value>用户名或密码无效</value>
+  </data>
   <data name="ResetPasswordBody" xml:space="preserve">
     <value>请通过&lt;a href='{0}'&gt;点击此处&lt;/a&gt;重置密码。</value>
   </data>

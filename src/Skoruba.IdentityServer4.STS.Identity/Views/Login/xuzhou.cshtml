@@ -5,7 +5,7 @@
 }
 
 <!DOCTYPE html>
-<html>
+<html lang="zh">
 
 <head>
     <meta charset="utf-8" />
@@ -89,6 +89,14 @@
                         letter-spacing: 2px;
                     }
 
+                    .login-main .login-body .login-form .login-error {
+                        //background-color:tomato;
+                        font-size: 10pt;
+                        border-radius: 2px;
+                        color:red;
+                        margin-bottom:10px;
+                    }
+
             .login-main .login-footer {
                 flex-grow: 1;
                 flex-shrink: 1;
@@ -113,8 +121,6 @@
             </div>
         </div>
 
-        @await Html.PartialAsync("_ValidationSummary")
-
         <div class="login-body">
             <div class="login-form">
                 <h4>用户登录</h4>
@@ -133,6 +139,13 @@
                                 <input asp-for="Password" autocomplete="off" type="password" id="password">
                             </div>
                         </div>
+
+                        @if (ViewContext.ModelState.IsValid == false)
+                        {
+                            <div class="login-error">
+                                @ViewContext.ModelState["loginError"].Errors.FirstOrDefault()?.ErrorMessage
+                            </div>
+                        }
 
                         <div>
                             记住密码

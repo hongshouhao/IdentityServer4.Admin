@@ -135,6 +135,9 @@
   <data name="InvalidRecoveryCode" xml:space="preserve">
     <value>Invalid recovery code entered.</value>
   </data>
+  <data name="InvalidUsernameOrPassword" xml:space="preserve">
+    <value>Invalid username or password</value>
+  </data>
   <data name="ResetPasswordBody" xml:space="preserve">
     <value>Please reset your password by &lt;a href='{0}'&gt;clicking here&lt;/a&gt;.</value>
   </data>

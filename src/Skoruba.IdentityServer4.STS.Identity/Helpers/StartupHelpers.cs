@@ -27,6 +27,7 @@ using Skoruba.IdentityServer4.Admin.EntityFramework.PostgreSQL.Extensions;
 using Skoruba.IdentityServer4.Admin.EntityFramework.Shared.Configuration;
 using Skoruba.IdentityServer4.Admin.EntityFramework.SqlServer.Extensions;
 using Skoruba.IdentityServer4.Admin.EntityFramework.Helpers;
+using System.Security.Policy;
 
 namespace Skoruba.IdentityServer4.STS.Identity.Helpers
 {
@@ -284,6 +285,13 @@ namespace Skoruba.IdentityServer4.STS.Identity.Helpers
         {
             var builder = services.AddIdentityServer(options =>
                 {
+                    //hongsh
+                    string tokenIssuerUri = configuration["TokenIssuerUri"];
+                    if (!string.IsNullOrWhiteSpace(tokenIssuerUri))
+                    {
+                        options.IssuerUri = tokenIssuerUri;
+                    }
+
                     options.Events.RaiseErrorEvents = true;
                     options.Events.RaiseInformationEvents = true;
                     options.Events.RaiseFailureEvents = true;
