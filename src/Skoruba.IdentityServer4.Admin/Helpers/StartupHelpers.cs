@@ -314,6 +314,13 @@ namespace Skoruba.IdentityServer4.Admin.Helpers
             services.AddIdentity<TUserIdentity, TUserIdentityRole>(options =>
                 {
                     options.User.RequireUniqueEmail = true;
+
+                    options.Password.RequireDigit = false;
+                    options.Password.RequireLowercase = false;
+                    options.Password.RequireUppercase = false;
+                    options.Password.RequireNonAlphanumeric = false;
+                    options.Password.RequiredUniqueChars = 0;
+                    options.Password.RequiredLength = 6;
                 })
                 .AddEntityFrameworkStores<TContext>()
                 .AddDefaultTokenProviders();
@@ -347,6 +354,13 @@ namespace Skoruba.IdentityServer4.Admin.Helpers
             services.AddIdentity<TUserIdentity, TUserIdentityRole>(options =>
                 {
                     options.User.RequireUniqueEmail = true;
+
+                    options.Password.RequireDigit = false;
+                    options.Password.RequireLowercase = false;
+                    options.Password.RequireUppercase = false;
+                    options.Password.RequireNonAlphanumeric = false;
+                    options.Password.RequiredUniqueChars = 0;
+                    options.Password.RequiredLength = 6;
                 })
                 .AddEntityFrameworkStores<TContext>()
                 .AddDefaultTokenProviders();
